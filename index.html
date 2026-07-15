@@ -1183,7 +1183,7 @@ function clearDrag(){
 }
 
 document.addEventListener("pointerdown", e=>{
-  if(e.button!=null && e.button!==0) return;
+  if(drag.mode || e.isPrimary===false || (e.button!=null && e.button!==0)) return;
   Snd.init();
   const card = e.target.closest(".card");
   const itemEl = e.target.closest(".item");
