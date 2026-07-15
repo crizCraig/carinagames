@@ -1348,7 +1348,7 @@ function save(){
 function load(){
   let d = null;
   try{ d = JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
-  if(d && d.items){
+  if(d && Array.isArray(d.items)){
     for(const s of d.items){
       if(!TYPES[s.type]) continue;
       addItem(s.type, clamp(Number(s.x)||50,2,98), clamp(Number(s.y)||75,FLOOR_TOP+2,FLOOR_BOT),
@@ -1371,17 +1371,17 @@ function ensureItem(type,x,y,count=1){
 }
 function upgradeRoom(){
   ensureItem("tower",78,84); ensureItem("pool",49,75);
-  ensureItem("bookshelf",[10,90],[74,73],2);
+  ensureItem("bookshelf",[14,86],[74,73],2);
   if(!findItems(i=>i.type==="plant"||i.type==="fern").length){ addItem("plant",21,70); addItem("fern",66,69); }
   ensureItem("tallBush",30,84);
   if(findItems(i=>TYPES[i.type].toy).length<3){ ensureItem("ball",40,93); ensureItem("mouse",52,92); ensureItem("kicker",33,89); }
   saveDirty=true;
 }
 function starterRoom(){
-  addItem("bookshelf",10,74); addItem("bookshelf",90,73);
+  addItem("bookshelf",14,74); addItem("bookshelf",86,73);
   addItem("plant",21,70); addItem("fern",66,69); addItem("tallBush",30,84);
   addItem("tower",78,84); addItem("pool",49,75);
-  addItem("rug",50,91); addItem("bed",14,91); addItem("litter",89,94);
+  addItem("rug",50,91); addItem("bed",20,91); addItem("litter",80,94);
   addItem("foodBowl",63,94,{level:.7}); addItem("waterBowl",72,93,{level:.75});
   addItem("ball",40,94); addItem("mouse",52,92); addItem("kicker",33,89);
 }
