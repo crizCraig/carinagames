@@ -246,9 +246,9 @@
     #shelf{padding:7px 8px; gap:7px}
     .card{height:76px; width:78px; padding:3px}
     .card .icon{height:42px}.card .icon svg{max-height:42px;max-width:66px}
-    #cat{width:130px}
-    .item[data-type="tower"] svg{width:108px}
-    .item[data-type="bookshelf"] svg,.item[data-type="tallBush"] svg{width:92px}
+    #cat{width:110px}
+    .item[data-type="tower"] svg{width:90px}
+    .item[data-type="bookshelf"] svg,.item[data-type="tallBush"] svg{width:82px}
     #window{width:150px;height:105px;top:7%}
     #frame{display:none}
     #wall-clock{width:58px;height:58px;border-width:6px;top:8%;right:20%}
@@ -256,6 +256,15 @@
     #intro .box{padding:14px 20px;border-width:4px;max-height:calc(100dvh - 16px)}
     #intro h1{font-size:24px;margin-bottom:5px}#intro p{font-size:13px;line-height:1.35;margin-bottom:4px}
     #intro .go{margin-top:7px;padding:8px 28px}
+  }
+  @media (max-height:350px){
+    #shelfwrap{height:80px}
+    .card{height:66px;width:72px}.card .icon{height:35px}.card .icon svg{max-height:35px}
+    #cat{width:96px}
+    .item[data-type="tower"] svg{width:70px}
+    .item[data-type="bookshelf"] svg,.item[data-type="tallBush"] svg{width:68px}
+    #window{width:125px;height:86px}
+    #wall-clock{width:50px;height:50px}
   }
 </style>
 </head>
