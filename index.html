@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="only light">
+<meta name="darkreader-lock">
+<title>Kitty Home — Cozy Orange Tabby Game</title>
+<style>
+  :root{
+    --wall:#ffe9d6; --wall2:#ffdfc2;
+    --wood:#dda36a; --wood2:#cf9257; --wood3:#c2854a;
+    --ink:#5b4232; --ink-soft:#8a6a4f;
+    --berry:#e0557f; --berry-deep:#c23e66; --blush:#ffcfdd;
+    --cat:#f5a04c; --cat-stripe:#d97f2e; --cat-paw:#f7b56e;
+    --nip:#6fbf5a;
+    --good:#63b85c; --warn:#e8a13c; --bad:#e05a4d;
+    --card:#fff6ea;
+    --sky-top:#8fd0f3; --sky-bottom:#eaf8ff; --ambient:rgba(50,49,94,0);
+    font-family: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%; overflow:hidden}
+  body{background:var(--wall); color:var(--ink); -webkit-user-select:none; user-select:none}
+  button{font:inherit; color:inherit; cursor:pointer; border:none; background:none}
+  button:focus-visible, [role="button"]:focus-visible{outline:3px solid #356fbd; outline-offset:3px}
+
+  #game{position:fixed; inset:0; display:flex; flex-direction:column; touch-action:none}
+
+  /* ---------- room ---------- */
+  #room{position:relative; flex:1; overflow:hidden;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 46px, rgba(224,85,127,.05) 46px 52px),
+      linear-gradient(var(--wall), var(--wall2));
+  }
+  #ambient{position:absolute; inset:0; z-index:980; background:var(--ambient); pointer-events:none;
+    transition:background 1.2s linear}
+  #floor{position:absolute; left:0; right:0; top:48%; bottom:0;
+    background:
+      repeating-linear-gradient(180deg, var(--wood) 0 34px, var(--wood2) 34px 36px),
+      var(--wood);
+    box-shadow: inset 0 6px 12px rgba(91,66,50,.25);
+  }
+  #floor::before{content:""; position:absolute; left:0; right:0; top:-10px; height:10px;
+    background:#fff3e4; border-bottom:3px solid #eccfae; }
+  .deco{position:absolute; pointer-events:none}
+  #window{left:26%; top:6%; width:210px; height:156px; border-radius:16px; overflow:hidden;
+    background:linear-gradient(var(--sky-top),var(--sky-bottom) 72%, #8fbf7a 73%);
+    border:10px solid #fff3e4; box-shadow:0 4px 0 #eccfae, inset 0 0 0 3px rgba(91,66,50,.08);}
+  #window,#frame{z-index:3}
+  #window .sun, #window .moon{position:absolute; width:38px; height:38px; border-radius:50%;
+    transition:left 1.2s linear, top 1.2s linear, opacity 1.2s linear}
+  #window .sun{left:18px; top:14px; background:#ffd76e;
+    box-shadow:0 0 18px 6px rgba(255,215,110,.55)}
+  #window .moon{left:140px; top:20px; opacity:0; background:#fff5ca;
+    box-shadow:0 0 14px 4px rgba(255,245,202,.35)}
+  #window .moon::after{content:""; position:absolute; width:34px; height:34px; left:-8px; top:-5px;
+    border-radius:50%; background:var(--sky-top)}
+  #window .stars{position:absolute; inset:0; opacity:0; transition:opacity 1.2s linear;
+    background-image:radial-gradient(circle at 14% 20%,#fff 0 1px,transparent 2px),
+      radial-gradient(circle at 38% 12%,#fff 0 1px,transparent 2px),
+      radial-gradient(circle at 64% 27%,#fff 0 1.5px,transparent 2.5px),
+      radial-gradient(circle at 83% 13%,#fff 0 1px,transparent 2px),
+      radial-gradient(circle at 72% 48%,#fff 0 1px,transparent 2px)}
+  #window .cloud{position:absolute; right:14px; top:30px; width:56px; height:18px; border-radius:12px; background:#fff; opacity:.9}
+  #window .cloud::before{content:""; position:absolute; left:12px; top:-10px; width:24px; height:20px; border-radius:50%; background:#fff}
+  #window .hills{position:absolute; left:-8%; right:-8%; bottom:-12px; height:48px; border-radius:55% 45% 0 0;
+    background:#7eaf72; box-shadow:80px -7px 0 5px #91c783}
+  #window .bar-v{position:absolute; left:50%; top:0; bottom:0; width:8px; margin-left:-4px; background:#fff3e4}
+  #window .bar-h{position:absolute; top:50%; left:0; right:0; height:8px; margin-top:-4px; background:#fff3e4}
+  #frame{right:8%; top:9%; width:92px; height:78px; background:#fff; border:8px solid var(--berry);
+    border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:34px;
+    transform:rotate(3deg); box-shadow:0 3px 8px rgba(91,66,50,.15)}
+  #wall-clock{right:24%; top:8%; width:78px; height:78px; border-radius:50%; background:#fffaf1;
+    border:8px solid #a97445; box-shadow:0 4px 0 #83552f, inset 0 0 0 2px #ead2b2; z-index:4}
+  #wall-clock::before{content:"12\A  \A6"; white-space:pre; position:absolute; inset:3px;
+    text-align:center; font-size:10px; line-height:25px; font-weight:900; color:var(--ink-soft)}
+  #wall-clock::after{content:""; position:absolute; width:6px; height:6px; border-radius:50%;
+    background:var(--berry-deep); left:50%; top:50%; translate:-50% -50%; z-index:3}
+  .clock-hand{position:absolute; left:50%; bottom:50%; width:3px; border-radius:4px;
+    background:var(--ink); transform-origin:50% 100%}
+  .clock-hand.hour{height:18px; margin-left:-1.5px}
+  .clock-hand.minute{height:25px; width:2px; margin-left:-1px; background:var(--berry-deep)}
+
+  #doggy-door{position:absolute; right:1.5%; top:34%; width:76px; height:104px; z-index:6;
+    border:8px solid #9e6b42; border-bottom-width:10px; border-radius:40px 40px 8px 8px;
+    background:linear-gradient(#543b30,#352821); box-shadow:0 4px 0 rgba(91,66,50,.25);
+    cursor:pointer; pointer-events:auto; overflow:hidden}
+  #doggy-door .flap{position:absolute; inset:0; border-radius:30px 30px 0 0;
+    background:linear-gradient(#b78458,#93613a); transform-origin:50% 0; transition:transform .2s ease;
+    display:flex; align-items:center; justify-content:center; font-size:25px; color:#fff0d9}
+  #doggy-door.open .flap{transform:perspective(110px) rotateX(72deg)}
+  #dog{position:absolute; width:132px; z-index:450; pointer-events:none; display:none;
+    transform-origin:50% 100%}
+  #dog.show{display:block}
+  #dog svg{display:block; overflow:visible}
+  #dog .dog-body{animation:dogbounce .34s ease-in-out infinite}
+  @keyframes dogbounce{0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)}}
+
+  /* ---------- placed items & cat share coordinate space ---------- */
+  .item{position:absolute; transform:translate(-50%,-100%); transform-origin:50% 100%; cursor:grab; touch-action:none}
+  .item.dragging{cursor:grabbing; filter:brightness(1.06) drop-shadow(0 10px 8px rgba(91,66,50,.28))}
+  .item svg{display:block; overflow:visible}
+  .item .shadow, #cat .shadow{fill:rgba(91,66,50,.18)}
+  .poop{position:absolute; width:26px; height:22px; cursor:pointer; touch-action:none}
+  .wiggle{animation:wiggle .35s ease-in-out infinite}
+  @keyframes wiggle{0%,100%{rotate:-4deg} 50%{rotate:4deg}}
+
+  #cat{position:absolute; width:168px; transform-origin:50% 100%; pointer-events:none; z-index:500}
+  #cat .hit{pointer-events:auto; cursor:grab; touch-action:none}
+  #cat.dragging .hit{cursor:grabbing}
+  #cat.dragging{filter:drop-shadow(0 14px 7px rgba(91,66,50,.28))}
+  #cat .flip{transition:transform .15s}
+  #cat svg{display:block; overflow:visible}
+  .pose{display:none}
+  #cat.p-stand .pose-stand, #cat.p-sit .pose-sit, #cat.p-lie .pose-lie{display:block}
+  .eyes-closed-g{display:none}
+  #cat.eyes-closed .eyes-open-g{display:none}
+  #cat.eyes-closed .eyes-closed-g{display:block}
+  .tail{animation:tailsway 2.6s ease-in-out infinite; transform-box:fill-box; transform-origin:20% 90%}
+  @keyframes tailsway{0%,100%{transform:rotate(0deg)} 50%{transform:rotate(14deg)}}
+  #cat.walking .legA{animation:legswing .38s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 8%}
+  #cat.walking .legB{animation:legswing .38s ease-in-out infinite reverse; transform-box:fill-box; transform-origin:50% 8%}
+  @keyframes legswing{0%,100%{transform:rotate(16deg)} 50%{transform:rotate(-16deg)}}
+  #cat .headU{transform:translate(150px,74px); transition:transform .35s}
+  #cat.head-down .headU{transform:translate(160px,102px) rotate(28deg)}
+  #cat.p-sit .headU{transform:translate(112px,52px)}
+  #cat.p-lie .headU{transform:translate(158px,122px) rotate(6deg)}
+  #cat.rolling{animation:roll .8s ease-in-out infinite}
+  @keyframes roll{0%,100%{rotate:-10deg} 50%{rotate:10deg}}
+  #cat.digging{animation:dig .3s ease-in-out infinite}
+  @keyframes dig{0%,100%{translate:0 0} 50%{translate:0 -4px}}
+  #cat.climbing .legA, #cat.climbing .legB{animation:climbpaw .3s ease-in-out infinite alternate;
+    transform-box:fill-box; transform-origin:50% 8%}
+  #cat.climbing .legB{animation-delay:-.15s}
+  @keyframes climbpaw{from{transform:translateY(-5px) rotate(-12deg)} to{transform:translateY(5px) rotate(12deg)}}
+  #cat.fishing .legA{animation:fishpaw .46s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 8%}
+  @keyframes fishpaw{0%,100%{transform:rotate(0deg)} 50%{transform:rotate(28deg) translateY(4px)}}
+
+  .item[data-type="pool"] .fishg{animation:fishswim 2.2s ease-in-out infinite; transform-box:fill-box; transform-origin:center}
+  @keyframes fishswim{0%,100%{transform:translateX(-10px) scaleX(1)} 49%{transform:translateX(10px) scaleX(1)} 50%{transform:translateX(10px) scaleX(-1)} 99%{transform:translateX(-10px) scaleX(-1)}}
+
+  /* thought bubble */
+  #bubble{position:absolute; z-index:990; background:#fff; border:3px solid var(--ink-soft);
+    border-radius:18px; padding:6px 12px; font-size:26px; opacity:0; transition:opacity .25s;
+    pointer-events:none; transform:translate(-50%,-100%)}
+  #bubble::after{content:""; position:absolute; left:50%; bottom:-14px; width:10px; height:10px;
+    margin-left:-5px; border-radius:50%; background:#fff; border:3px solid var(--ink-soft)}
+  #bubble.show{opacity:1}
+
+  /* particles */
+  #fx{position:absolute; inset:0; pointer-events:none; z-index:900; overflow:hidden}
+  .p{position:absolute; font-size:20px; animation:floaty var(--dur,1.2s) ease-out forwards; transform:translate(-50%,-50%)}
+  .p.dot{width:7px; height:7px; border-radius:50%}
+  @keyframes floaty{
+    0%{opacity:1; translate:0 0; scale:.6}
+    70%{opacity:1}
+    100%{opacity:0; translate:var(--dx,0px) var(--dy,-48px); scale:1.15}
+  }
+  .p.drop{animation:droppy var(--dur,.5s) ease-in forwards}
+  @keyframes droppy{
+    0%{opacity:1; translate:0 0}
+    100%{opacity:.9; translate:var(--dx,0px) var(--dy,40px)}
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute; left:10px; top:10px; z-index:1000; display:flex; flex-direction:column; gap:5px}
+  .meter{display:flex; align-items:center; gap:6px; background:rgba(255,246,234,.9);
+    border-radius:999px; padding:3px 10px 3px 6px; box-shadow:0 2px 5px rgba(91,66,50,.15); width:128px}
+  .meter .ico{font-size:15px; width:20px; text-align:center}
+  .meter .bar{flex:1; height:9px; border-radius:99px; background:#eadbc8; overflow:hidden}
+  .meter .bar i{display:block; height:100%; border-radius:99px; background:var(--good); transition:width .4s, background .4s}
+  .meter.low .bar i{background:var(--bad)}
+  .meter.mid .bar i{background:var(--warn)}
+  .meter.low{animation:pulse 1s infinite}
+  @keyframes pulse{50%{transform:scale(1.05)}}
+
+  #topbtns{position:absolute; right:10px; top:10px; z-index:1000; display:flex; gap:8px}
+  .rbtn{width:44px; height:44px; border-radius:50%; background:rgba(255,246,234,.92); font-size:20px;
+    box-shadow:0 2px 5px rgba(91,66,50,.2); display:flex; align-items:center; justify-content:center}
+  .rbtn:active{transform:scale(.92)}
+
+  #sign{position:absolute; left:50%; top:0; transform:translateX(-50%); z-index:1000;
+    background:linear-gradient(#b98756,#a06f3f); color:#fff6ea; padding:7px 22px 9px;
+    border-radius:0 0 16px 16px; font-weight:800; font-size:17px; letter-spacing:.06em;
+    box-shadow:0 3px 6px rgba(91,66,50,.3); text-shadow:0 1px 0 rgba(91,66,50,.4)}
+  #world-status{position:absolute; left:50%; top:45px; translate:-50% 0; z-index:1000;
+    display:flex; gap:7px; align-items:center; white-space:nowrap; pointer-events:none}
+  .status-chip{background:rgba(255,246,234,.9); border-radius:999px; padding:4px 10px;
+    font-size:12px; font-weight:800; box-shadow:0 2px 5px rgba(91,66,50,.14)}
+
+  /* ---------- shelf ---------- */
+  #shelfwrap{position:relative; height:118px; background:linear-gradient(#b98756,#9c6c3d);
+    box-shadow:0 -4px 10px rgba(91,66,50,.3); z-index:1100; display:flex; align-items:stretch}
+  #shelfwrap.trash-hot{outline:4px dashed var(--blush); outline-offset:-6px}
+  #shelfwrap.trash-hot::after{content:"Put away 🧺"; position:absolute; inset:0; display:flex;
+    align-items:center; justify-content:center; font-size:22px; font-weight:800; color:#fff6ea;
+    background:rgba(156,108,61,.85); pointer-events:none}
+  #shelf{flex:1; display:flex; gap:8px; padding:9px 10px; overflow-x:auto; scrollbar-width:none}
+  #shelf::-webkit-scrollbar{display:none}
+  .scroller{width:44px; display:flex; align-items:center; justify-content:center; color:#fff6ea;
+    font-size:22px; background:rgba(91,66,50,.18); flex:none}
+  .card{flex:none; width:88px; border-radius:14px; background:var(--card);
+    box-shadow:0 3px 0 #dcbf9b; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:3px; padding:6px 4px; touch-action:none; cursor:grab}
+  .card:active{transform:translateY(1px)}
+  .card .icon{height:56px; display:flex; align-items:flex-end; justify-content:center}
+  .card .icon svg{max-height:56px; max-width:76px}
+  .card .lbl{font-size:11px; font-weight:800; color:var(--ink-soft); letter-spacing:.03em; text-align:center}
+
+  #ghost{position:fixed; z-index:2000; pointer-events:none; transform:translate(-50%,-70%); transition:rotate .2s}
+  #ghost.tilt{rotate:-38deg}
+
+  /* ---------- intro ---------- */
+  #intro{position:fixed; inset:0; z-index:3000; background:rgba(91,66,50,.45);
+    display:flex; align-items:center; justify-content:center; padding:20px; overflow:auto}
+  #intro.hide{display:none}
+  #intro .box{background:var(--card); border-radius:26px; padding:28px 30px; width:min(430px,100%);
+    max-height:calc(100dvh - 24px); overflow:auto;
+    text-align:center; box-shadow:0 12px 40px rgba(91,66,50,.4); border:5px solid var(--berry)}
+  #intro h1{font-size:30px; color:var(--berry-deep); margin-bottom:10px}
+  #intro p{font-size:15.5px; line-height:1.55; margin-bottom:8px}
+  #intro .go{margin-top:14px; background:var(--berry); color:#fff; font-weight:800; font-size:19px;
+    padding:11px 34px; border-radius:999px; box-shadow:0 4px 0 var(--berry-deep)}
+  #intro .go:active{transform:translateY(3px); box-shadow:0 1px 0 var(--berry-deep)}
+
+  @media (prefers-reduced-motion: reduce){
+    .tail, #cat.walking .legA, #cat.walking .legB, #cat.climbing .legA, #cat.climbing .legB,
+    #cat.fishing .legA, #dog .dog-body, .item[data-type="pool"] .fishg, .meter.low{animation:none}
+  }
+  @media (max-width:600px){
+    #cat{width:136px}
+    #window{left:auto; right:7%; top:9%; width:140px; height:104px}
+    #frame{display:none}
+    #wall-clock{right:auto; left:38%; top:12%; width:62px; height:62px; border-width:6px}
+    .clock-hand.hour{height:14px}.clock-hand.minute{height:19px}
+    #doggy-door{width:58px; height:82px; border-width:6px; top:37%}
+    #sign{display:none}
+    #world-status{top:calc(48% - 35px)}
+    .status-chip{font-size:10px; padding:3px 7px}
+    .meter{width:106px}
+  }
+  @media (max-height:520px){
+    #shelfwrap{height:92px}
+    #shelf{padding:7px 8px; gap:7px}
+    .card{height:76px; width:78px; padding:3px}
+    .card .icon{height:42px}.card .icon svg{max-height:42px;max-width:66px}
+    #cat{width:130px}
+    .item[data-type="tower"] svg{width:108px}
+    .item[data-type="bookshelf"] svg,.item[data-type="tallBush"] svg{width:92px}
+    #window{width:150px;height:105px;top:7%}
+    #frame{display:none}
+    #wall-clock{width:58px;height:58px;border-width:6px;top:8%;right:20%}
+    #intro{align-items:flex-start;padding:8px}
+    #intro .box{padding:14px 20px;border-width:4px;max-height:calc(100dvh - 16px)}
+    #intro h1{font-size:24px;margin-bottom:5px}#intro p{font-size:13px;line-height:1.35;margin-bottom:4px}
+    #intro .go{margin-top:7px;padding:8px 28px}
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="room">
+    <div class="deco" id="window" role="img" aria-label="The sky outside changes through the day">
+      <div class="stars"></div><div class="sun"></div><div class="moon"></div><div class="cloud"></div>
+      <div class="hills"></div><div class="bar-v"></div><div class="bar-h"></div>
+    </div>
+    <div class="deco" id="frame">😻</div>
+    <div class="deco" id="wall-clock" role="img" aria-label="Kitty Home clock">
+      <span class="clock-hand hour"></span><span class="clock-hand minute"></span>
+    </div>
+    <div id="floor"></div>
+    <button id="doggy-door" aria-label="Doggy door. Tap for a doggy surprise"><span class="flap">🐾</span></button>
+    <div id="ambient"></div>
+    <div id="items"></div>
+    <div id="dog" aria-hidden="true"></div>
+    <div id="cat" role="button" tabindex="0" aria-label="Adult orange tabby kitty. Drag to move or tap to pet"></div>
+    <div id="bubble"></div>
+    <div id="fx"></div>
+    <div id="hud"></div>
+    <div id="topbtns">
+      <button class="rbtn" id="btn-sound" aria-label="Sound on or off">🔊</button>
+      <button class="rbtn" id="btn-help" aria-label="How to play">❓</button>
+      <button class="rbtn" id="btn-reset" aria-label="Start over">🔄</button>
+    </div>
+    <div id="sign">🐾 Kitty Home</div>
+    <div id="world-status" aria-live="polite">
+      <span class="status-chip" id="time-readout">☀️ Day</span>
+      <span class="status-chip" id="fish-readout">🐟 0 caught</span>
+    </div>
+  </div>
+  <div id="shelfwrap">
+    <button class="scroller" id="scrL" aria-label="Scroll shelf left">◀</button>
+    <div id="shelf"></div>
+    <button class="scroller" id="scrR" aria-label="Scroll shelf right">▶</button>
+  </div>
+</div>
+<div id="ghost"></div>
+<div id="intro" class="hide" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <div class="box">
+    <h1 id="intro-title">🐾 Kitty Home</h1>
+    <p>Build a cozy home for your adult orange tabby!</p>
+    <p>🐈 <b>Drag and drop kitty</b> anywhere — even onto a tower.<br>
+       🧺 <b>Drag items</b> from the shelf into the room.<br>
+       🥫 <b>Pour food & water</b> — hold the bag or jug over a bowl.<br>
+       🐟 <b>Tap the little pool</b> to go fishing.<br>
+       🐶 Watch the <b>doggy door</b> — tall towers keep kitty safe!<br>
+       🧹 <b>Scoop the litter box</b> — tap the poops!<br>
+       🌿 Sprinkle <b>catnip</b> and watch kitty go wild.<br>
+       🌅 The window follows a cozy <b>day and night cycle</b>.<br>
+       💗 <b>Pet your kitty</b> with a quick tap!</p>
+    <button class="go" id="btn-go">Let's play!</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   Kitty Home — take care of your kitty in a room you build.
+   ============================================================ */
+const FLOOR_TOP = 52;           // items/cat live between here and 96 (% of room height)
+const FLOOR_BOT = 96;
+const SAVE_KEY = "kitty-home-v1";
+const SAVE_VERSION = 2;
+
+const $ = s => document.querySelector(s);
+const room = $("#room"), itemsEl = $("#items"), catEl = $("#cat"),
+      fxEl = $("#fx"), bubbleEl = $("#bubble"), shelfEl = $("#shelf"),
+      shelfWrap = $("#shelfwrap"), ghostEl = $("#ghost"), hudEl = $("#hud");
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const rand = (a,b)=>a+Math.random()*(b-a);
+const depthScale = y => 0.62 + 0.55*(y-FLOOR_TOP)/(FLOOR_BOT-FLOOR_TOP);
+
+/* ---------- sounds (tiny synthesized WebAudio) ---------- */
+const Snd = {
+  ctx:null, muted:false,
+  init(){ if(!this.ctx){ try{ this.ctx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } },
+  env(dur,vol){ const g=this.ctx.createGain(); g.gain.setValueAtTime(0.0001,this.ctx.currentTime);
+    g.gain.linearRampToValueAtTime(vol,this.ctx.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,this.ctx.currentTime+dur); g.connect(this.ctx.destination); return g; },
+  tone(f0,f1,dur,type,vol){ if(!this.ctx||this.muted) return;
+    const o=this.ctx.createOscillator(); o.type=type||"sine";
+    o.frequency.setValueAtTime(f0,this.ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(Math.max(f1,30),this.ctx.currentTime+dur);
+    o.connect(this.env(dur,vol||0.12)); o.start(); o.stop(this.ctx.currentTime+dur+0.05); },
+  noise(dur,freq,vol){ if(!this.ctx||this.muted) return;
+    const n=this.ctx.sampleRate*dur, buf=this.ctx.createBuffer(1,n,this.ctx.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+    const src=this.ctx.createBufferSource(); src.buffer=buf;
+    const f=this.ctx.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; f.Q.value=1.2;
+    src.connect(f); f.connect(this.env(dur,vol||0.1)); src.start(); },
+  meow(){ this.tone(520,830,0.16,"triangle",0.11); setTimeout(()=>this.tone(760,340,0.26,"triangle",0.1),140); },
+  purr(){ this.tone(72,58,0.35,"sawtooth",0.05); this.noise(0.3,140,0.02); },
+  munch(){ this.noise(0.08,900,0.07); },
+  slurp(){ this.tone(300,520,0.12,"sine",0.05); this.noise(0.1,1600,0.03); },
+  pour(){ this.noise(0.12,2400,0.05); },
+  dig(){ this.noise(0.1,600,0.06); },
+  sparkle(){ this.tone(880,1760,0.12,"sine",0.07); setTimeout(()=>this.tone(1320,2200,0.14,"sine",0.06),90); },
+  boing(){ this.tone(220,520,0.14,"square",0.05); },
+  splash(){ this.noise(0.18,1900,0.06); this.tone(520,260,0.16,"sine",0.04); },
+  bark(){ this.tone(190,105,0.16,"sawtooth",0.08); setTimeout(()=>this.tone(170,95,0.13,"square",0.05),115); },
+};
+
+/* ---------- item art (small hand-drawn SVGs, base at bottom-center) ---------- */
+const shadow = (w,h)=>`<ellipse class="shadow" cx="${w/2}" cy="${h-4}" rx="${w*0.42}" ry="7"/>`;
+const ART = {
+  bed: w=>`<svg width="${w}" viewBox="0 0 150 66">${shadow(150,66)}
+    <ellipse cx="75" cy="38" rx="70" ry="25" fill="#d94f7d"/>
+    <ellipse cx="75" cy="33" rx="57" ry="18" fill="#ffcfdd"/>
+    <ellipse cx="75" cy="37" rx="43" ry="11" fill="#fff0f5"/>
+    <circle cx="30" cy="30" r="4" fill="#fff" opacity=".7"/><circle cx="120" cy="30" r="4" fill="#fff" opacity=".7"/></svg>`,
+  tower: w=>`<svg width="${w}" viewBox="0 0 160 275">${shadow(160,275)}
+    <ellipse cx="80" cy="263" rx="66" ry="12" fill="#9b683b"/>
+    <ellipse cx="80" cy="257" rx="66" ry="11" fill="#c98a4b"/>
+    <rect x="69" y="36" width="25" height="222" rx="9" fill="#ead4a9"/>
+    <path d="M69,55 h25 M69,75 h25 M69,95 h25 M69,115 h25 M69,135 h25 M69,155 h25 M69,175 h25 M69,195 h25 M69,215 h25 M69,235 h25" stroke="#d1b178" stroke-width="4"/>
+    <rect x="24" y="176" width="48" height="51" rx="10" fill="#b97840"/>
+    <path d="M24,191 Q48,164 72,191 v36 h-48z" fill="#d99d5d"/>
+    <circle cx="48" cy="204" r="14" fill="#745033"/>
+    <ellipse cx="126" cy="201" rx="29" ry="10" fill="#bd7a3e"/>
+    <ellipse cx="126" cy="195" rx="29" ry="9" fill="#e4b16f"/>
+    <ellipse cx="40" cy="137" rx="34" ry="11" fill="#bd7a3e"/>
+    <ellipse cx="40" cy="131" rx="34" ry="10" fill="#e4b16f"/>
+    <ellipse cx="118" cy="85" rx="36" ry="11" fill="#bd7a3e"/>
+    <ellipse cx="118" cy="79" rx="36" ry="10" fill="#e4b16f"/>
+    <ellipse cx="80" cy="35" rx="58" ry="14" fill="#b8733b"/>
+    <ellipse cx="80" cy="28" rx="58" ry="13" fill="#ecc184"/>
+    <line x1="136" y1="88" x2="136" y2="117" stroke="#8f633d" stroke-width="3"/>
+    <circle cx="136" cy="125" r="10" fill="#e0557f"/>
+    <path d="M132,121 q4,-9 8,0 M130,128 q6,6 12,0" stroke="#ffcfdd" stroke-width="2" fill="none"/></svg>`,
+  litter: w=>`<svg width="${w}" viewBox="0 0 140 74">${shadow(140,74)}
+    <path d="M12,26 h116 l-10,42 h-96 Z" fill="#62b6b0"/>
+    <path d="M12,26 h116 l-3,12 h-110 Z" fill="#4f9c96"/>
+    <ellipse cx="70" cy="30" rx="53" ry="9" fill="#f0dcae"/>
+    <circle cx="48" cy="29" r="2.5" fill="#dbc28e"/><circle cx="72" cy="32" r="2.5" fill="#dbc28e"/><circle cx="94" cy="29" r="2.5" fill="#dbc28e"/>
+    <circle cx="70" cy="54" r="7" fill="#3d827d"/><circle cx="60" cy="46" r="3" fill="#3d827d"/><circle cx="70" cy="44" r="3" fill="#3d827d"/><circle cx="80" cy="46" r="3" fill="#3d827d"/></svg>`,
+  foodBowl: w=>`<svg width="${w}" viewBox="0 0 90 46">${shadow(90,46)}
+    <path d="M8,14 h74 l-8,26 h-58 Z" fill="#e0557f"/>
+    <ellipse cx="45" cy="14" rx="37" ry="8" fill="#8a3050"/>
+    <g class="fillg"><ellipse class="fill" cx="45" cy="13" rx="31" ry="6" fill="#b5722f"/>
+    <circle class="fk" cx="34" cy="12" r="3" fill="#8f5722"/><circle class="fk" cx="48" cy="14" r="3" fill="#8f5722"/><circle class="fk" cx="58" cy="11" r="3" fill="#8f5722"/></g>
+    <ellipse cx="45" cy="38" rx="10" ry="3" fill="#c23e66"/></svg>`,
+  waterBowl: w=>`<svg width="${w}" viewBox="0 0 90 46">${shadow(90,46)}
+    <path d="M8,14 h74 l-8,26 h-58 Z" fill="#4d9fd6"/>
+    <ellipse cx="45" cy="14" rx="37" ry="8" fill="#26648f"/>
+    <g class="fillg"><ellipse class="fill" cx="45" cy="13" rx="31" ry="6" fill="#a8dcf5"/>
+    <ellipse class="fk" cx="38" cy="12" rx="8" ry="2" fill="#d8f1fd"/></g>
+    <ellipse cx="45" cy="38" rx="10" ry="3" fill="#3a7fae"/></svg>`,
+  yarn: w=>`<svg width="${w}" viewBox="0 0 62 58">${shadow(62,58)}
+    <circle cx="31" cy="28" r="24" fill="#7f6ff0"/>
+    <path d="M10,22 q21,-12 42,0 M8,32 q23,12 46,0 M18,10 q10,20 6,38" stroke="#a99dff" stroke-width="4" fill="none"/>
+    <path d="M52,42 q14,4 6,12" stroke="#7f6ff0" stroke-width="4" fill="none"/></svg>`,
+  mouse: w=>`<svg width="${w}" viewBox="0 0 74 42">${shadow(74,42)}
+    <path d="M12,34 Q10,12 34,10 Q58,10 62,32 Z" fill="#9a9aa8"/>
+    <circle cx="30" cy="12" r="8" fill="#b9b9c6"/><circle cx="30" cy="12" r="4" fill="#f2c7cf"/>
+    <circle cx="60" cy="28" r="3" fill="#e8778a"/><circle cx="52" cy="22" r="2" fill="#3a3440"/>
+    <path d="M12,32 q-12,-4 -8,-14" stroke="#9a9aa8" stroke-width="3.5" fill="none"/></svg>`,
+  wand: w=>`<svg width="${w}" viewBox="0 0 84 92">${shadow(84,92)}
+    <line x1="14" y1="86" x2="58" y2="30" stroke="#a06f3f" stroke-width="6" stroke-linecap="round"/>
+    <path d="M58,30 q2,-8 -2,-14" stroke="#c9c1b5" stroke-width="2.5" fill="none"/>
+    <ellipse cx="56" cy="10" rx="7" ry="13" fill="#e0557f" transform="rotate(-18 56 10)"/>
+    <ellipse cx="66" cy="14" rx="6" ry="12" fill="#f5a04c" transform="rotate(14 66 14)"/>
+    <ellipse cx="47" cy="14" rx="6" ry="11" fill="#62b6b0" transform="rotate(-40 47 14)"/></svg>`,
+  catnip: w=>`<svg width="${w}" viewBox="0 0 88 48">${shadow(88,48)}
+    <ellipse cx="44" cy="38" rx="36" ry="8" fill="#8fce7f" opacity=".5"/>
+    <ellipse cx="26" cy="26" rx="7" ry="14" fill="#6fbf5a" transform="rotate(-24 26 26)"/>
+    <ellipse cx="44" cy="20" rx="7" ry="16" fill="#5aa947" transform="rotate(2 44 20)"/>
+    <ellipse cx="62" cy="26" rx="7" ry="14" fill="#6fbf5a" transform="rotate(24 62 26)"/>
+    <circle cx="20" cy="38" r="2.5" fill="#bfe8b2"/><circle cx="52" cy="40" r="2.5" fill="#bfe8b2"/><circle cx="70" cy="36" r="2.5" fill="#bfe8b2"/></svg>`,
+  rug: w=>`<svg width="${w}" viewBox="0 0 160 56">
+    <ellipse cx="80" cy="28" rx="76" ry="24" fill="#e88aa5"/>
+    <ellipse cx="80" cy="28" rx="60" ry="18" fill="#ffcfdd"/>
+    <ellipse cx="80" cy="28" rx="42" ry="12" fill="#fff0f5"/>
+    <text x="80" y="34" text-anchor="middle" font-size="16">🐾</text></svg>`,
+  ball: w=>`<svg width="${w}" viewBox="0 0 58 55">${shadow(58,55)}
+    <circle cx="29" cy="27" r="22" fill="#f2c84b"/><path d="M9,22 q20,10 40,0 M17,9 q7,19 2,36 M39,9 q-7,19 -2,36" stroke="#fff1a6" stroke-width="4" fill="none"/>
+    <circle cx="22" cy="18" r="5" fill="#fff" opacity=".45"/></svg>`,
+  kicker: w=>`<svg width="${w}" viewBox="0 0 92 45">${shadow(92,45)}
+    <path d="M12,13 Q46,2 80,13 L76,37 Q46,44 16,37z" fill="#58bcb2"/>
+    <path d="M24,14 q7,10 0,22 M43,10 q7,13 0,30 M62,11 q7,12 0,27" stroke="#a4e4dd" stroke-width="4" fill="none"/>
+    <path d="M11,18 l-8,-8 M12,24 l-10,0 M80,18 l9,-7 M80,26 l10,2" stroke="#e0557f" stroke-width="3"/></svg>`,
+  tunnel: w=>`<svg width="${w}" viewBox="0 0 142 72">${shadow(142,72)}
+    <path d="M18,60 Q20,7 70,8 Q120,7 124,60z" fill="#9b7ae8"/>
+    <path d="M70,8 Q120,7 124,60 h-42 Q81,22 70,8z" fill="#7655c7" opacity=".55"/>
+    <ellipse cx="23" cy="39" rx="20" ry="29" fill="#6848ae"/><ellipse cx="24" cy="39" rx="12" ry="20" fill="#3e3260"/>
+    <path d="M45,13 q8,20 4,45 M67,9 q8,21 5,50 M91,11 q8,19 6,48" stroke="#bda7f4" stroke-width="4" fill="none" opacity=".65"/></svg>`,
+  plant: w=>`<svg width="${w}" viewBox="0 0 92 128">${shadow(92,128)}
+    <path d="M28,80 h40 l-7,43 h-26z" fill="#d47b55"/><ellipse cx="48" cy="81" rx="22" ry="7" fill="#ad563d"/>
+    <path d="M47,80 Q28,50 21,18 M48,79 Q55,39 70,14 M48,74 Q43,40 47,7 M47,72 Q66,55 80,43 M44,67 Q28,58 12,48" stroke="#4e9b55" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="20" cy="20" rx="10" ry="18" fill="#69b96a" transform="rotate(-32 20 20)"/><ellipse cx="70" cy="17" rx="11" ry="20" fill="#76c976" transform="rotate(25 70 17)"/>
+    <ellipse cx="47" cy="14" rx="10" ry="19" fill="#5caf61"/><ellipse cx="78" cy="43" rx="9" ry="17" fill="#69b96a" transform="rotate(50 78 43)"/><ellipse cx="14" cy="47" rx="9" ry="17" fill="#76c976" transform="rotate(-55 14 47)"/></svg>`,
+  fern: w=>`<svg width="${w}" viewBox="0 0 110 114">${shadow(110,114)}
+    <path d="M35,74 h40 l-7,36 h-26z" fill="#e8a058"/><ellipse cx="55" cy="74" rx="22" ry="7" fill="#bd6f3c"/>
+    <path d="M55,73 Q43,35 13,19 M55,72 Q55,30 55,6 M56,71 Q70,33 96,17 M54,72 Q32,54 10,51 M57,70 Q79,51 102,48" stroke="#4c9b55" stroke-width="4" fill="none"/>
+    <g fill="#77c778"><ellipse cx="20" cy="21" rx="13" ry="6" transform="rotate(28 20 21)"/><ellipse cx="32" cy="31" rx="13" ry="6" transform="rotate(34 32 31)"/><ellipse cx="56" cy="15" rx="7" ry="14"/><ellipse cx="88" cy="21" rx="13" ry="6" transform="rotate(-30 88 21)"/><ellipse cx="77" cy="32" rx="13" ry="6" transform="rotate(-34 77 32)"/><ellipse cx="18" cy="51" rx="14" ry="6"/><ellipse cx="92" cy="49" rx="14" ry="6"/></g></svg>`,
+  tallBush: w=>`<svg width="${w}" viewBox="0 0 126 190">${shadow(126,190)}
+    <path d="M42,146 h45 l-7,39 h-31z" fill="#c9784f"/><ellipse cx="64" cy="147" rx="25" ry="8" fill="#a9563b"/>
+    <rect x="59" y="92" width="9" height="58" rx="4" fill="#7b6b3f"/>
+    <ellipse cx="63" cy="71" rx="48" ry="65" fill="#559f54"/>
+    <circle cx="39" cy="43" r="27" fill="#6db868"/><circle cx="79" cy="37" r="28" fill="#70bf6b"/><circle cx="93" cy="73" r="28" fill="#62ae5f"/><circle cx="39" cy="86" r="29" fill="#69b565"/><circle cx="67" cy="96" r="31" fill="#5ba657"/>
+    <g fill="#a7dc8e"><circle cx="42" cy="31" r="5"/><circle cx="82" cy="51" r="4"/><circle cx="30" cy="75" r="5"/><circle cx="73" cy="91" r="5"/><circle cx="99" cy="79" r="4"/></g></svg>`,
+  bookshelf: w=>`<svg width="${w}" viewBox="0 0 136 196">${shadow(136,196)}
+    <rect x="12" y="7" width="112" height="181" rx="7" fill="#9b653b"/><rect x="21" y="16" width="94" height="158" fill="#73492f"/>
+    <path d="M17,61 h102 M17,112 h102 M17,165 h102" stroke="#c58a50" stroke-width="8"/>
+    <g><rect x="27" y="25" width="13" height="33" rx="2" fill="#e0557f"/><rect x="42" y="20" width="12" height="38" rx="2" fill="#62b6b0"/><rect x="56" y="29" width="15" height="29" rx="2" fill="#f0bd4f"/><rect x="73" y="18" width="13" height="40" rx="2" fill="#8c77df"/><rect x="88" y="25" width="18" height="33" rx="2" fill="#e88962"/>
+    <rect x="26" y="76" width="16" height="33" rx="2" fill="#73b660"/><rect x="44" y="70" width="12" height="39" rx="2" fill="#efb846"/><rect x="58" y="80" width="14" height="29" rx="2" fill="#d65d79"/><rect x="77" y="72" width="31" height="8" rx="2" fill="#79aee5"/><rect x="80" y="82" width="28" height="8" rx="2" fill="#9e83dc"/><rect x="76" y="92" width="32" height="9" rx="2" fill="#e68c57"/>
+    <rect x="28" y="127" width="13" height="35" rx="2" fill="#79aee5"/><rect x="43" y="133" width="16" height="29" rx="2" fill="#e68c57"/><rect x="61" y="122" width="13" height="40" rx="2" fill="#68ae68"/><rect x="76" y="128" width="12" height="34" rx="2" fill="#d95b80"/><rect x="90" y="120" width="16" height="42" rx="2" fill="#e3b746"/></g>
+    <rect x="7" y="181" width="122" height="9" rx="4" fill="#7c4c2c"/></svg>`,
+  pool: w=>`<svg width="${w}" viewBox="0 0 180 82">${shadow(180,82)}
+    <ellipse cx="90" cy="46" rx="82" ry="29" fill="#4f9fbd"/><ellipse cx="90" cy="40" rx="76" ry="26" fill="#b8edf2"/>
+    <ellipse cx="90" cy="39" rx="65" ry="20" fill="#55bfd3"/><path d="M35,38 q18,-12 35,0 M111,48 q17,8 34,-2" stroke="#98e2ec" stroke-width="3" fill="none" opacity=".8"/>
+    <g class="fishg"><path d="M82,38 q12,-10 25,0 q-13,11 -25,0z" fill="#f08d42"/><path d="M83,38 l-12,-9 v18z" fill="#e36f31"/><circle cx="101" cy="36" r="1.5" fill="#3d342e"/></g>
+    <g fill="#8cc65e"><ellipse cx="37" cy="26" rx="14" ry="6" transform="rotate(-12 37 26)"/><ellipse cx="143" cy="54" rx="13" ry="6" transform="rotate(12 143 54)"/></g>
+    <circle cx="52" cy="43" r="3" fill="#d8f8fa"/><circle cx="125" cy="31" r="2.5" fill="#d8f8fa"/></svg>`,
+  foodBag: w=>`<svg width="${w}" viewBox="0 0 74 92">${shadow(74,92)}
+    <rect x="12" y="16" width="50" height="70" rx="8" fill="#c97b3d"/>
+    <rect x="12" y="16" width="50" height="14" rx="7" fill="#a05f28"/>
+    <rect x="9" y="8" width="56" height="12" rx="6" fill="#e6a866"/>
+    <circle cx="37" cy="56" r="16" fill="#fff3e4"/><text x="37" y="63" text-anchor="middle" font-size="18">🐟</text></svg>`,
+  waterJug: w=>`<svg width="${w}" viewBox="0 0 78 92">${shadow(78,92)}
+    <path d="M18,24 L14,80 q0,8 8,8 h28 q8,0 8,-8 L54,24 Z" fill="#7ec3e8"/>
+    <path d="M20,40 L17,78 q0,6 6,6 h26 q6,0 6,-6 L52,40 Z" fill="#a8dcf5"/>
+    <path d="M18,24 h36 l8,-10 h-14 Z" fill="#5aa9d3"/>
+    <path d="M56,34 q16,6 12,26" stroke="#5aa9d3" stroke-width="7" fill="none" stroke-linecap="round"/></svg>`,
+  poop: `<svg width="26" viewBox="0 0 26 22">
+    <ellipse cx="13" cy="17" rx="11" ry="5" fill="#8a5a33"/>
+    <ellipse cx="13" cy="11" rx="8" ry="5" fill="#9c6a3e"/>
+    <circle cx="13" cy="5" r="4" fill="#8a5a33"/></svg>`,
+};
+
+/* ---------- item catalog ---------- */
+const TYPES = {
+  bed:      {lbl:"Cozy Bed",   w:140, art:"bed"},
+  tower:    {lbl:"Tall Tower", w:146, art:"tower", perch:225},
+  litter:   {lbl:"Litter Box", w:130, art:"litter"},
+  foodBowl: {lbl:"Food Bowl",  w:84,  art:"foodBowl", bowl:"food"},
+  waterBowl:{lbl:"Water Bowl", w:84,  art:"waterBowl", bowl:"water"},
+  foodBag:  {lbl:"Kitty Food", w:64,  art:"foodBag", tool:"food"},
+  waterJug: {lbl:"Fresh Water",w:64,  art:"waterJug", tool:"water"},
+  catnip:   {lbl:"Catnip",     w:82,  art:"catnip"},
+  yarn:     {lbl:"Yarn Ball",  w:58,  art:"yarn", toy:true},
+  mouse:    {lbl:"Toy Mouse",  w:66,  art:"mouse", toy:true},
+  ball:     {lbl:"Jingle Ball",w:54,  art:"ball", toy:true},
+  kicker:   {lbl:"Kicker Toy", w:84,  art:"kicker", toy:true},
+  tunnel:   {lbl:"Play Tunnel",w:132, art:"tunnel", toy:true},
+  wand:     {lbl:"Feather Wand",w:70, art:"wand", toy:true},
+  rug:      {lbl:"Soft Rug",   w:150, art:"rug", flat:true},
+  plant:    {lbl:"Leafy Plant",w:82,  art:"plant"},
+  fern:     {lbl:"Happy Fern", w:96,  art:"fern"},
+  tallBush: {lbl:"Tall Bush",  w:112, art:"tallBush"},
+  bookshelf:{lbl:"Bookshelf",  w:120, art:"bookshelf"},
+  pool:     {lbl:"Fish Pool",  w:166, art:"pool", pool:true, flat:true},
+};
+const SHELF_ORDER = ["bed","tower","pool","litter","foodBowl","waterBowl","foodBag","waterJug","catnip",
+  "yarn","mouse","ball","kicker","tunnel","wand","rug","plant","fern","tallBush","bookshelf"];
+
+/* ---------- state ---------- */
+let items = [];      // {id,type,x,y,level,uses,poops:[],el}
+let nextId = 1;
+const cat = {
+  x:50, y:75, dir:1, state:"idle", t:0, target:null, tx:0, ty:0, after:null,
+  perch:null, climbProgress:0, climbDuration:1.35, safeFromDog:false,
+  toyInvite:null, bubbleT:0, nipCooldown:0, litterTimer:rand(50,80), catches:0,
+  needs:{food:75, water:75, energy:85, fun:70},
+};
+const dog = {active:false, phase:"waiting", x:104, y:64, dir:-1, t:0,
+  nextIn:rand(45,75), targetTower:null, barkT:0};
+let worldMinutes = new Date().getHours()*60 + new Date().getMinutes();
+const TIME_RATE = 4; // four game minutes per real second: a full cozy day lasts six minutes
+let saveDirty = false;
+
+/* ---------- cat art ---------- */
+function buildCat(){
+  catEl.innerHTML = `<div class="flip"><svg viewBox="0 0 220 170" class="hit">
+  <title>Adult orange tabby kitty</title>
+  <defs><g id="catHead">
+    <polygon points="-28,-10 -23,-43 -3,-26" fill="#f5a04c"/>
+    <polygon points="-24,-15 -21,-35 -9,-24" fill="#f2c7cf"/>
+    <polygon points="28,-10 23,-43 3,-26" fill="#f5a04c"/>
+    <polygon points="24,-15 21,-35 9,-24" fill="#f2c7cf"/>
+    <circle r="28" fill="#f5a04c"/>
+    <path d="M-10,-29 v9 M0,-31 v10 M10,-29 v9" stroke="#d97f2e" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-27,-9 l10,4 M-27,-1 l9,2 M27,-9 l-10,4 M27,-1 l-9,2" stroke="#d97f2e" stroke-width="3.2" stroke-linecap="round"/>
+    <ellipse cx="0" cy="13" rx="14" ry="10" fill="#fff7ef"/>
+    <polygon points="-4,8 4,8 0,13" fill="#e8778a"/>
+    <path d="M0,13 q-3,6 -8,4 M0,13 q3,6 8,4" stroke="#5b4232" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <g class="eyes-open-g">
+      <ellipse cx="-13" cy="-3" rx="5" ry="6.5" fill="#7ec26a"/><ellipse cx="-13" cy="-2" rx="2.2" ry="5" fill="#2c2420"/><circle cx="-14.5" cy="-5" r="1.4" fill="#fff"/>
+      <ellipse cx="13" cy="-3" rx="5" ry="6.5" fill="#7ec26a"/><ellipse cx="13" cy="-2" rx="2.2" ry="5" fill="#2c2420"/><circle cx="11.5" cy="-5" r="1.4" fill="#fff"/>
+    </g>
+    <g class="eyes-closed-g">
+      <path d="M-18,-3 q5,4 10,0 M8,-3 q5,4 10,0" stroke="#5b4232" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </g>
+    <path d="M-14,7 L-36,2 M-14,12 L-36,15 M14,7 L36,2 M14,12 L36,15" stroke="#5b4232" stroke-width="1.6" opacity=".55"/>
+  </g></defs>
+  <ellipse class="shadow" cx="105" cy="160" rx="62" ry="9"/>
+  <g class="pose pose-stand">
+    <g class="tail"><path d="M42,118 C 14,104 8,74 24,52" stroke="#f5a04c" stroke-width="13" fill="none" stroke-linecap="round"/><path d="M18,96 l11,-4 M14,82 l12,-2 M16,67 l11,2" stroke="#d97f2e" stroke-width="5" stroke-linecap="round"/></g>
+    <g class="legB"><rect x="52" y="119" width="13" height="39" rx="6" fill="#eb9440"/><path d="M53,137 h11 M53,146 h11" stroke="#d97f2e" stroke-width="3"/><ellipse cx="58.5" cy="156" rx="8" ry="5" fill="#f7b56e"/></g>
+    <g class="legA"><rect x="122" y="119" width="13" height="39" rx="6" fill="#eb9440"/><path d="M123,137 h11 M123,146 h11" stroke="#d97f2e" stroke-width="3"/><ellipse cx="128.5" cy="156" rx="8" ry="5" fill="#f7b56e"/></g>
+    <ellipse cx="98" cy="114" rx="62" ry="32" fill="#f5a04c"/>
+    <path d="M62,90 q-5,14 -1,27 M87,85 q-4,17 0,32 M111,85 q-2,16 2,29" stroke="#d97f2e" stroke-width="7" fill="none" stroke-linecap="round" opacity=".9"/>
+    <path d="M139,94 q13,14 9,31" stroke="#fff2df" stroke-width="15" fill="none" stroke-linecap="round" opacity=".8"/>
+    <g class="legA"><rect x="72" y="121" width="13" height="39" rx="6" fill="#f5a04c"/><path d="M73,139 h11 M73,148 h11" stroke="#d97f2e" stroke-width="3"/><ellipse cx="78.5" cy="158" rx="8" ry="5" fill="#f7b56e"/></g>
+    <g class="legB"><rect x="138" y="121" width="13" height="39" rx="6" fill="#f5a04c"/><path d="M139,139 h11 M139,148 h11" stroke="#d97f2e" stroke-width="3"/><ellipse cx="144.5" cy="158" rx="8" ry="5" fill="#f7b56e"/></g>
+    <use href="#catHead" class="headU"/>
+  </g>
+  <g class="pose pose-sit">
+    <g class="tail"><path d="M70,156 q-34,8 -42,-10" stroke="#f5a04c" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M43,157 l-3,-9 M54,158 l-2,-9" stroke="#d97f2e" stroke-width="4"/></g>
+    <ellipse cx="100" cy="120" rx="40" ry="46" fill="#f5a04c"/>
+    <path d="M72,100 q-6,18 -2,34 M88,92 q-5,20 -2,42" stroke="#d97f2e" stroke-width="7" fill="none" stroke-linecap="round" opacity=".8"/>
+    <rect x="98" y="112" width="12" height="46" rx="6" fill="#f5a04c"/><ellipse cx="104" cy="156" rx="8" ry="5" fill="#f7b56e"/>
+    <rect x="116" y="112" width="12" height="46" rx="6" fill="#eb9440"/><ellipse cx="122" cy="156" rx="8" ry="5" fill="#f7b56e"/>
+    <use href="#catHead" class="headU"/>
+  </g>
+  <g class="pose pose-lie">
+    <g class="tail"><path d="M48,152 q40,16 78,6" stroke="#f5a04c" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M78,158 l-2,10 M94,160 l-1,10 M110,159 l1,9" stroke="#d97f2e" stroke-width="4"/></g>
+    <ellipse cx="105" cy="138" rx="62" ry="24" fill="#f5a04c"/>
+    <path d="M72,120 q-4,12 -1,22 M100,116 q-3,14 0,26 M128,120 q-2,12 1,20" stroke="#d97f2e" stroke-width="7" fill="none" stroke-linecap="round" opacity=".8"/>
+    <ellipse cx="70" cy="156" rx="12" ry="6" fill="#f7b56e"/>
+    <use href="#catHead" class="headU"/>
+  </g>
+  </svg></div>`;
+  catEl.className = "p-stand";
+}
+
+function buildDog(){
+  $("#dog").innerHTML = `<div class="dog-flip"><svg viewBox="0 0 180 125">
+    <ellipse cx="91" cy="116" rx="66" ry="8" fill="rgba(91,66,50,.2)"/>
+    <g class="dog-body">
+      <path d="M34,79 Q15,64 20,42" stroke="#9b6a43" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <ellipse cx="87" cy="76" rx="57" ry="34" fill="#b98255"/>
+      <path d="M63,50 q14,16 10,37 M91,44 q14,19 10,42" stroke="#875634" stroke-width="8" fill="none" stroke-linecap="round" opacity=".7"/>
+      <rect x="51" y="84" width="16" height="29" rx="7" fill="#a66e45"/><ellipse cx="59" cy="112" rx="11" ry="5" fill="#d7a87a"/>
+      <rect x="114" y="84" width="16" height="29" rx="7" fill="#a66e45"/><ellipse cx="122" cy="112" rx="11" ry="5" fill="#d7a87a"/>
+      <circle cx="137" cy="57" r="31" fill="#c58d5e"/>
+      <ellipse cx="120" cy="43" rx="13" ry="25" fill="#744a31" transform="rotate(-20 120 43)"/>
+      <ellipse cx="151" cy="39" rx="12" ry="24" fill="#744a31" transform="rotate(25 151 39)"/>
+      <ellipse cx="153" cy="67" rx="20" ry="15" fill="#e2ba90"/><circle cx="166" cy="62" r="6" fill="#3b3029"/>
+      <circle cx="132" cy="52" r="4" fill="#302923"/><circle cx="145" cy="50" r="4" fill="#302923"/>
+      <path d="M139,69 q8,9 16,2" stroke="#60412e" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M112,65 q20,9 42,0" stroke="#e05557" stroke-width="6" fill="none"/>
+      <circle cx="132" cy="72" r="7" fill="#f0bd4f"/>
+    </g></svg></div>`;
+}
+
+/* ---------- rendering ---------- */
+function roomRect(){ return room.getBoundingClientRect(); }
+function pxOf(x,y){ const r=roomRect(); return {px:r.width*x/100, py:r.height*y/100}; }
+function pctOf(clientX,clientY){ const r=roomRect();
+  return {x:(clientX-r.left)/r.width*100, y:(clientY-r.top)/r.height*100}; }
+
+function renderItem(it){
+  const t = TYPES[it.type], s = depthScale(it.y);
+  it.el.style.left = it.x+"%";
+  it.el.style.top = it.y+"%";
+  it.el.style.transform = `translate(-50%,-100%) scale(${s})`;
+  it.el.style.zIndex = t.flat ? 10 : Math.round(it.y*10);
+  if(t.bowl) updateBowl(it);
+  if(t.pool) updatePool(it);
+  if(it.type==="catnip") it.el.style.opacity = 0.45 + 0.55*(it.uses/5);
+}
+function updateBowl(it){
+  const g = it.el.querySelector(".fillg");
+  if(g) g.style.opacity = it.level>0.03 ? "1" : "0";
+  const f = it.el.querySelector(".fill");
+  if(f) f.setAttribute("ry", (2+4.5*it.level).toFixed(2));
+  it.el.querySelectorAll(".fk").forEach((k,i)=>k.style.opacity = it.level > 0.2+0.25*i ? "1":"0");
+}
+function updatePool(it){
+  const fish = it.el.querySelector(".fishg");
+  if(fish) fish.style.opacity = it.fishReady ? "1" : ".18";
+  it.el.setAttribute("aria-label", it.fishReady ? "Fish pool with a fish. Tap to catch it" : "Fish pool. A new fish will swim in soon");
+}
+function addItem(type,x,y,extra){
+  const t = TYPES[type];
+  if(!t) return null;
+  const it = {id:nextId++, type, x, y, level: t.bowl?0:undefined, uses: type==="catnip"?5:undefined,
+    fishReady:t.pool?true:undefined, fishCooldown:t.pool?0:undefined, poops:[], ...extra};
+  if(t.bowl) it.level=Number.isFinite(it.level)?clamp(it.level,0,1):0;
+  if(type==="catnip") it.uses=Number.isFinite(it.uses)?clamp(it.uses,0,5):5;
+  if(t.pool){ it.fishReady = it.fishReady !== false; it.fishCooldown = Number.isFinite(it.fishCooldown) ? it.fishCooldown : 0; }
+  const el = document.createElement("div");
+  el.className = "item"; el.dataset.id = it.id; el.dataset.type = type;
+  el.setAttribute("role","button"); el.tabIndex=0; el.setAttribute("aria-label",t.lbl+". Drag to move");
+  el.innerHTML = ART[t.art](t.w);
+  it.el = el; itemsEl.appendChild(el);
+  if(it.poopCount) for(let i=0;i<it.poopCount;i++) addPoop(it,false);
+  renderItem(it); items.push(it); saveDirty = true;
+  return it;
+}
+function removeItem(it){
+  if(!it) return;
+  if(cat.target===it || cat.perch===it) cancelCatAction();
+  if(dog.active && dog.targetTower===it) finishDogEvent(true);
+  it.el.remove(); items = items.filter(i=>i!==it);
+  if(cat.toyInvite===it) cat.toyInvite=null;
+  saveDirty = true;
+}
+function findItems(pred){ return items.filter(pred); }
+function nearest(list){ let best=null,bd=1e9;
+  for(const it of list){ const d=Math.hypot(it.x-cat.x,(it.y-cat.y)*1.6); if(d<bd){bd=d;best=it;} }
+  return best; }
+
+function cancelCatAction(){
+  if(cat.target && cat.target.el) cat.target.el.classList.remove("wiggle");
+  cat.target = null; cat.after = null; cat.perch = null; cat.climbProgress = 0;
+  cat.safeFromDog = false;
+  catEl.classList.remove("dragging");
+  setState("idle",.5);
+}
+
+/* ---------- poops ---------- */
+function addPoop(it, fresh){
+  const p = document.createElement("div");
+  p.className = "poop"; p.innerHTML = ART.poop;
+  p.style.left = (18+rand(0,50))+"%"; p.style.top = (12+rand(0,20))+"%";
+  p.addEventListener("pointerdown", e=>{
+    e.stopPropagation();
+    p.remove(); it.poops = it.poops.filter(x=>x!==p);
+    Snd.sparkle(); fxAt(it.x, it.y-8, "✨", 3); fxAt(it.x, it.y-12, "💗", 1);
+    cat.needs.fun = clamp(cat.needs.fun+4,0,100); saveDirty = true;
+  });
+  it.el.appendChild(p); it.poops.push(p);
+  if(fresh){ Snd.dig(); saveDirty = true; }
+}
+
+/* ---------- particles & bubble ---------- */
+function fxAt(x,y,txt,n,opts){
+  const {px,py} = pxOf(x,y); n=n||1; opts=opts||{};
+  for(let i=0;i<n;i++){
+    const s = document.createElement("span");
+    s.className = "p"+(opts.cls?" "+opts.cls:"");
+    if(opts.dot){ s.classList.add("dot"); s.style.background = opts.dot; }
+    else s.textContent = txt;
+    s.style.left = (px+rand(-22,22))+"px";
+    s.style.top = (py+rand(-14,6))+"px";
+    s.style.setProperty("--dx", rand(-26,26)+"px");
+    s.style.setProperty("--dy", (opts.dy!=null?opts.dy:rand(-64,-38))+"px");
+    s.style.setProperty("--dur", (opts.dur||rand(0.9,1.5))+"s");
+    if(opts.size) s.style.fontSize = opts.size+"px";
+    fxEl.appendChild(s);
+    setTimeout(()=>s.remove(), (opts.dur||1.5)*1000+100);
+  }
+}
+function showBubble(emoji, secs){
+  bubbleEl.textContent = emoji; bubbleEl.classList.add("show");
+  cat.bubbleT = secs||2.5;
+}
+
+/* ---------- cat state machine ---------- */
+function setState(s, dur){
+  cat.state = s; cat.t = dur||0;
+  catEl.classList.remove("walking","rolling","digging","head-down","climbing","fishing");
+  const pose = {sleep:"p-lie", nip:"p-lie", sit:"p-sit", perchsit:"p-sit", safe:"p-sit", groom:"p-sit"}[s] || "p-stand";
+  catEl.className = catEl.className.replace(/p-\w+/,"") ;
+  catEl.classList.add(pose);
+  if(s==="walk"||s==="chase"||s==="escape") catEl.classList.add("walking");
+  if(s==="eat"||s==="drink"||s==="fish") catEl.classList.add("head-down");
+  if(s==="nip") catEl.classList.add("rolling");
+  if(s==="litter") catEl.classList.add("digging");
+  if(s==="climb"||s==="descend") catEl.classList.add("climbing");
+  if(s==="fish") catEl.classList.add("fishing");
+  catEl.classList.toggle("eyes-closed", s==="sleep");
+}
+function walkTo(x,y,after){
+  cat.tx = clamp(x,3,97); cat.ty = clamp(y,FLOOR_TOP+2,FLOOR_BOT-1);
+  cat.after = after; cat.perch = null; setState("walk");
+}
+function facingPose(it, focusX=it.x, forcedSide=0){
+  const r = roomRect();
+  let side = forcedSide || (cat.x<=focusX ? -1 : 1); // -1 means kitty stands to the left
+  const width = (parseFloat(getComputedStyle(catEl).width)||168) * depthScale(it.y);
+  const headReach = (50/220) * width / Math.max(r.width,1) * 100;
+  let x = focusX - (side<0 ? 1 : -1)*headReach;
+  if(x<3 || x>97){ side *= -1; x = focusX - (side<0 ? 1 : -1)*headReach; }
+  return {x:clamp(x,3,97), y:it.y, dir:side<0?1:-1, side};
+}
+function approachItem(it, state, focusX=it.x, forcedSide=0, duration){
+  const pose = facingPose(it,focusX,forcedSide);
+  cat.target=it;
+  walkTo(pose.x,pose.y,()=>{
+    if(!items.includes(it)){ setState("idle",.5); return; }
+    cat.dir=pose.dir; setState(state,duration);
+  });
+}
+function poolPose(pool){
+  const r=roomRect(), side=cat.x<=pool.x?-1:1;
+  const waterRadius = TYPES.pool.w*depthScale(pool.y)*(65/180)/Math.max(r.width,1)*100;
+  const focusX = pool.x + side*waterRadius*.62;
+  return facingPose(pool,focusX,side);
+}
+function towerHeight(it){
+  const svg=it.el&&it.el.querySelector("svg"), baseWidth=svg?(parseFloat(getComputedStyle(svg).width)||TYPES.tower.w):TYPES.tower.w;
+  return baseWidth*(247/160)*depthScale(it.y);
+}
+function tallestTower(){
+  return findItems(i=>i.type==="tower").sort((a,b)=>towerHeight(b)-towerHeight(a) ||
+    Math.hypot(a.x-cat.x,a.y-cat.y)-Math.hypot(b.x-cat.x,b.y-cat.y))[0] || null;
+}
+function startClimb(tower, stay=9, safe=false){
+  if(!tower || !items.includes(tower)){ cat.safeFromDog=false; setState("idle",.5); return; }
+  cat.target=tower; cat.perch=tower; cat.x=tower.x; cat.y=tower.y;
+  cat.climbProgress=0; cat.perchStay=stay; cat.safeFromDog=safe;
+  setState("climb",cat.climbDuration); Snd.boing();
+}
+function approachTower(tower, stay=9, safe=false){
+  if(!tower) return;
+  cat.target=tower;
+  if(safe){
+    cat.safeFromDog=true; cat.tx=tower.x; cat.ty=tower.y; cat.after=()=>startClimb(tower,stay,true); setState("escape");
+  } else walkTo(tower.x,tower.y,()=>startClimb(tower,stay,false));
+}
+function startDescent(){
+  if(!cat.perch){ setState("idle",.5); return; }
+  cat.climbProgress=1; setState("descend",1.05);
+}
+function goFish(pool){
+  if(!pool || !items.includes(pool)) return;
+  if(!pool.fishReady){ showBubble("💦 … 🐟",2); return; }
+  if(dog.active || cat.safeFromDog) return;
+  const pose=poolPose(pool); cat.target=pool;
+  walkTo(pose.x,pose.y,()=>{
+    if(!items.includes(pool) || !pool.fishReady){ setState("idle",.5); return; }
+    cat.dir=pose.dir; setState("fish",3.4); Snd.splash();
+  });
+}
+const TOY_BUBBLES = {yarn:"🧶", mouse:"🐭", ball:"🎾", kicker:"💚", tunnel:"🟣"};
+function startInvitedToyPlay(toy){
+  if(!toy || !items.includes(toy) || !TOY_BUBBLES[toy.type]) return false;
+  cat.toyInvite = null; cat.target = toy;
+  showBubble(TOY_BUBBLES[toy.type]+" 💗",1.8);
+  walkTo(toy.x, toy.y, ()=>{
+    if(!items.includes(toy)){ cat.target=null; setState("idle",0.5); return; }
+    fxAt(cat.x,cat.y-14,"💗",2);
+    setState("play",3);
+  });
+  return true;
+}
+function inviteToyPlay(toy){
+  // Yarn and toy mice are tempting, but they do not preempt care the way the wand does.
+  if(!toy || !TOY_BUBBLES[toy.type]) return;
+  cat.toyInvite = toy;
+  const urgentCare = cat.litterTimer<=0 ||
+    (cat.nipCooldown<=0 && findItems(i=>i.type==="catnip" && i.uses>0).length>0) ||
+    Math.min(cat.needs.food,cat.needs.water,cat.needs.energy)<42;
+  if(!urgentCare && ["idle","sit","groom","perchsit"].includes(cat.state)) startInvitedToyPlay(toy);
+}
+function decide(){
+  if(dog.active || cat.safeFromDog) return;
+  const n = cat.needs;
+  // catnip is irresistible
+  if(cat.nipCooldown<=0){
+    const nip = nearest(findItems(i=>i.type==="catnip" && i.uses>0));
+    if(nip){ cat.target=nip; walkTo(nip.x, nip.y, ()=>{ setState("nip",8); Snd.meow(); }); return; }
+  }
+  // litter need
+  if(cat.litterTimer<=0){
+    const box = nearest(findItems(i=>i.type==="litter" && i.poops.length<3));
+    if(box){ cat.target=box; walkTo(box.x, box.y-1, ()=>setState("litter",2.6)); return; }
+    const full = findItems(i=>i.type==="litter").length;
+    showBubble(full ? "🧹" : "🚽", 3);
+    n.fun = clamp(n.fun-1,0,100);
+  }
+  // most urgent low need
+  const order = [["food",n.food],["water",n.water],["energy",n.energy],["fun",n.fun]].sort((a,b)=>a[1]-b[1]);
+  for(const [need,val] of order){
+    if(val>=42) break;
+    if(need==="food"){
+      const b = nearest(findItems(i=>i.type==="foodBowl" && i.level>0.05));
+      if(b){ approachItem(b,"eat",b.x,0,5); return; }
+      showBubble(findItems(i=>i.type==="foodBowl").length ? "🥫" : "🍽️", 3);
+    }else if(need==="water"){
+      const b = nearest(findItems(i=>i.type==="waterBowl" && i.level>0.05));
+      if(b){ approachItem(b,"drink",b.x,0,4); return; }
+      showBubble(findItems(i=>i.type==="waterBowl").length ? "🚰" : "💧", 3);
+    }else if(need==="energy"){
+      const bed = nearest(findItems(i=>i.type==="bed" || i.type==="rug"));
+      if(bed){ cat.target=bed; walkTo(bed.x, bed.y-1, ()=>setState("sleep",999)); return; }
+      showBubble("🛏️",3);
+      if(val<15){ cat.target=null; setState("sleep",999); return; }  // too tired, flop on floor
+    }else if(need==="fun"){
+      const toy = nearest(findItems(i=>TYPES[i.type].toy));
+      const tower = nearest(findItems(i=>i.type==="tower"));
+      const pool = nearest(findItems(i=>i.type==="pool" && i.fishReady));
+      const pick=Math.random();
+      if(pool && pick<.34){ goFish(pool); return; }
+      if(toy && (!tower || pick<.76)){ cat.target=toy; walkTo(toy.x, toy.y, ()=>setState("play",4)); return; }
+      if(tower){ approachTower(tower,9,false); return; }
+      if(pool){ goFish(pool); return; }
+      showBubble("🧶",3);
+    }
+  }
+  // Follow up on a yarn/mouse invitation once all urgent needs are handled.
+  if(cat.toyInvite){
+    if(startInvitedToyPlay(cat.toyInvite)) return;
+    cat.toyInvite = null;
+  }
+  // nothing urgent: mosey around
+  const r = Math.random();
+  if(r<0.35) walkTo(rand(10,90), rand(FLOOR_TOP+6,FLOOR_BOT-4), ()=>setState("idle",rand(1,3)));
+  else if(r<0.6) setState("sit", rand(2,5));
+  else if(r<0.75) setState("groom", rand(2,4));
+  else setState("idle", rand(1.5,4));
+}
+
+function tick(dt){
+  const n = cat.needs;
+  for(const pool of findItems(i=>i.type==="pool" && !i.fishReady)){
+    pool.fishCooldown-=dt;
+    if(pool.fishCooldown<=0){ pool.fishReady=true; pool.fishCooldown=0; updatePool(pool); saveDirty=true;
+      fxAt(pool.x,pool.y-5,"🐟",1,{size:15}); }
+  }
+  // decay
+  n.food = clamp(n.food-0.22*dt,0,100);
+  n.water = clamp(n.water-0.26*dt,0,100);
+  n.energy = clamp(n.energy-(cat.state==="sleep"?0:0.13*dt),0,100);
+  n.fun = clamp(n.fun-0.3*dt,0,100);
+  cat.litterTimer -= dt; cat.nipCooldown -= dt;
+  if(cat.bubbleT>0){ cat.bubbleT-=dt; if(cat.bubbleT<=0) bubbleEl.classList.remove("show"); }
+
+  const speed = (cat.state==="chase"?34:cat.state==="escape"?28:15)*dt;   // % per second
+  switch(cat.state){
+    case "walk": case "chase": case "escape": {
+      if(cat.state==="chase" && wandDrag.active){ cat.tx=wandDrag.x; cat.ty=clamp(wandDrag.y+6,FLOOR_TOP+2,FLOOR_BOT-1); }
+      const dx = cat.tx-cat.x, dy = cat.ty-cat.y, d = Math.hypot(dx,dy);
+      if(Math.abs(dx)>0.5) cat.dir = dx>0?1:-1;
+      if(d < (cat.state==="chase"?7:1.6)){
+        if(cat.state==="chase"){
+          fxAt(cat.x,cat.y-8,"💥",1); fxAt(cat.x,cat.y-10,"💗",1); Snd.boing();
+          n.fun = clamp(n.fun+6,0,100); setState("idle",0.4);
+        } else { const f=cat.after; cat.after=null; if(f) f(); else setState("idle",1); }
+      } else { cat.x += dx/d*speed; cat.y += dy/d*speed; }
+      break; }
+    case "eat": {
+      const b = cat.target;
+      if(!b || b.level<=0.02){ setState("idle",0.5); break; }
+      b.level = clamp(b.level-0.05*dt,0,1); updateBowl(b);
+      n.food = clamp(n.food+9*dt,0,100);
+      if(Math.random()<dt*4){ Snd.munch(); fxAt(b.x,b.y-6,"",1,{dot:"#8f5722",dy:-16,dur:0.6}); }
+      cat.t-=dt; if(cat.t<=0 || n.food>95){ setState("sit",1.5); if(Math.random()<0.6) cat.litterTimer = Math.min(cat.litterTimer, rand(8,25)); }
+      break; }
+    case "drink": {
+      const b = cat.target;
+      if(!b || b.level<=0.02){ setState("idle",0.5); break; }
+      b.level = clamp(b.level-0.06*dt,0,1); updateBowl(b);
+      n.water = clamp(n.water+12*dt,0,100);
+      if(Math.random()<dt*3){ Snd.slurp(); fxAt(b.x,b.y-6,"💧",1,{size:12,dy:-14,dur:0.5}); }
+      cat.t-=dt; if(cat.t<=0 || n.water>95) setState("sit",1);
+      break; }
+    case "fish": {
+      const pool=cat.target;
+      if(!pool || !items.includes(pool) || !pool.fishReady){ setState("idle",.5); break; }
+      n.fun=clamp(n.fun+5*dt,0,100);
+      if(Math.random()<dt*3.5){ Snd.splash(); fxAt(pool.x+rand(-4,4),pool.y-5,"💧",1,{size:12,dy:-20,dur:.55}); }
+      cat.t-=dt;
+      if(cat.t<=0){
+        pool.fishReady=false; pool.fishCooldown=rand(20,32); updatePool(pool);
+        cat.catches++; n.fun=clamp(n.fun+18,0,100); n.food=clamp(n.food+9,0,100);
+        fxAt(pool.x,pool.y-10,"🐟",2); fxAt(cat.x,cat.y-17,"✨",3); showBubble("🐟!",2.2);
+        Snd.sparkle(); saveDirty=true; updateWorldStatus(); setState("sit",1.8);
+      }
+      break; }
+    case "sleep": {
+      n.energy = clamp(n.energy+ (cat.target && cat.target.type==="bed" ? 8 : 4)*dt,0,100);
+      if(Math.random()<dt*0.8) fxAt(cat.x+4,cat.y-16,"💤",1,{size:16});
+      if(n.energy>96){ setState("sit",1); Snd.meow(); }
+      break; }
+    case "play": {
+      const toy = cat.target;
+      if(!toy){ setState("idle",0.5); break; }
+      toy.el.classList.add("wiggle");
+      n.fun = clamp(n.fun+8*dt,0,100);
+      if(Math.random()<dt*1.5) fxAt(cat.x,cat.y-14,"🎵",1);
+      if(Math.random()<dt*0.9){ toy.x = clamp(toy.x+rand(-4,4),5,95); renderItem(toy); }
+      cat.t-=dt; if(cat.t<=0 || n.fun>92){ toy.el.classList.remove("wiggle"); setState("sit",1); }
+      break; }
+    case "nip": {
+      const patch = cat.target;
+      n.fun = clamp(n.fun+10*dt,0,100);
+      if(Math.random()<dt*3) fxAt(cat.x+rand(-6,6),cat.y-14,Math.random()<0.5?"💚":"✨",1);
+      cat.t-=dt;
+      if(cat.t<=0){
+        if(patch && patch.uses!=null){ patch.uses--; renderItem(patch); saveDirty=true;
+          if(patch.uses<=0){ fxAt(patch.x,patch.y-6,"✨",4); removeItem(patch); } }
+        cat.nipCooldown = 35; setState("sit",2); Snd.meow();
+      }
+      break; }
+    case "litter": {
+      const box = cat.target;
+      if(Math.random()<dt*5) Snd.dig();
+      cat.t-=dt;
+      if(cat.t<=0){ if(box) addPoop(box,true); cat.litterTimer = rand(70,110); setState("idle",0.5); }
+      break; }
+    case "climb": {
+      if(!cat.perch || !items.includes(cat.perch)){ cancelCatAction(); break; }
+      cat.x=cat.perch.x; cat.y=cat.perch.y; cat.t-=dt;
+      cat.climbProgress=clamp(1-cat.t/cat.climbDuration,0,1);
+      n.fun=clamp(n.fun+2*dt,0,100);
+      if(Math.random()<dt*1.5) fxAt(cat.x,cat.y-10-cat.climbProgress*22,"🐾",1,{size:12});
+      if(cat.t<=0){ cat.climbProgress=1; setState(cat.safeFromDog?"safe":"perchsit",cat.perchStay); }
+      break; }
+    case "descend": {
+      if(!cat.perch || !items.includes(cat.perch)){ cancelCatAction(); break; }
+      cat.x=cat.perch.x; cat.y=cat.perch.y; cat.t-=dt;
+      cat.climbProgress=clamp(cat.t/1.05,0,1);
+      if(cat.t<=0){ cat.perch=null; cat.target=null; cat.climbProgress=0; setState("idle",.6); }
+      break; }
+    case "perchsit": {
+      n.fun = clamp(n.fun+3*dt,0,100); n.energy = clamp(n.energy+2*dt,0,100);
+      cat.t-=dt; if(cat.t<=0) startDescent();
+      break; }
+    case "safe": {
+      n.energy=clamp(n.energy+2*dt,0,100);
+      if(Math.random()<dt*.7) fxAt(cat.x,cat.y-28,"🛡️",1,{size:13});
+      if(!dog.active){ cat.safeFromDog=false; setState("perchsit",3); }
+      break; }
+    case "dragged": break;
+    default: { // idle, sit, groom
+      cat.t-=dt;
+      if(cat.state==="groom" && Math.random()<dt*1.2) fxAt(cat.x,cat.y-14,"✨",1,{size:12});
+      if(cat.t<=0) decide();
+    }
+  }
+  // wand chase trigger
+  if(!dog.active && drag.mode!=="cat" && wandDrag.active && wandDrag.hot && !["chase","nip","litter","climb","descend"].includes(cat.state)){ setState("chase"); }
+  if(cat.state==="chase" && !wandDrag.active){ setState("idle",0.5); }
+}
+
+function renderCat(){
+  let x=cat.x, y=cat.y, lift=0;
+  if(cat.perch){ x=cat.perch.x; y=cat.perch.y; lift = towerHeight(cat.perch)*cat.climbProgress; }
+  const s = depthScale(y);
+  catEl.style.left = x+"%"; catEl.style.top = y+"%";
+  catEl.style.transform = `translate(-50%,-100%) translateY(${-lift}px) scale(${s})`;
+  catEl.style.zIndex = cat.perch ? Math.round(y*10)+5 : Math.round(y*10);
+  catEl.querySelector(".flip").style.transform = `scaleX(${cat.dir})`;
+  if(cat.bubbleT>0){
+    const {px,py} = pxOf(x,y);
+    bubbleEl.style.left = px+"px";
+    bubbleEl.style.top = (py - 130*s - lift)+"px";
+  }
+}
+
+/* ---------- dog visitor ---------- */
+function dogDoorPoint(){
+  const d=$("#doggy-door").getBoundingClientRect();
+  return pctOf(d.left+d.width/2,d.bottom);
+}
+function startDogEvent(){
+  if(dog.active) return true;
+  const tower=tallestTower();
+  if(!tower){ showBubble("🐶 ➜ 🗼?",2.6); dog.nextIn=rand(14,22); return false; }
+  cancelCatAction();
+  const door=dogDoorPoint();
+  dog.active=true; dog.phase="burst"; dog.t=.75; dog.targetTower=tower;
+  dog.x=clamp(door.x+5,96,105); dog.y=clamp(door.y+8,FLOOR_TOP+5,FLOOR_BOT-4); dog.dir=-1;
+  $("#dog").classList.add("show"); $("#doggy-door").classList.add("open");
+  showBubble("🐶!",1.7); Snd.bark(); fxAt(clamp(door.x,3,97),dog.y-8,"💥",2);
+  approachTower(tower,999,true);
+  return true;
+}
+function finishDogEvent(aborted=false){
+  dog.active=false; dog.phase="waiting"; dog.targetTower=null; dog.nextIn=rand(65,110);
+  $("#dog").classList.remove("show");
+  setTimeout(()=>$("#doggy-door").classList.remove("open"),180);
+  if(cat.safeFromDog){
+    cat.safeFromDog=false;
+    if(aborted){ cat.perch=null; cat.climbProgress=0; setState("idle",.6); }
+    else if(cat.perch) setState("perchsit",3);
+  }
+}
+function moveDogToward(x,y,speed,dt){
+  const dx=x-dog.x,dy=y-dog.y,d=Math.hypot(dx,dy);
+  if(Math.abs(dx)>.25) dog.dir=dx>0?1:-1;
+  if(d>.01){ const step=Math.min(d,speed*dt); dog.x+=dx/d*step; dog.y+=dy/d*step; }
+  return d;
+}
+function tickDog(dt){
+  if(!dog.active){
+    dog.nextIn-=dt;
+    if(dog.nextIn<=0 && !drag.mode) startDogEvent();
+    return;
+  }
+  const tower=dog.targetTower;
+  if(!tower || !items.includes(tower)){ finishDogEvent(true); return; }
+  if(dog.phase==="burst"){
+    const door=dogDoorPoint(); moveDogToward(clamp(door.x-7,86,96),dog.y,25,dt);
+    dog.t-=dt; if(dog.t<=0) dog.phase="chase";
+  }else if(dog.phase==="chase"){
+    const kittyUp=cat.perch===tower && cat.climbProgress>.72;
+    const goalX=kittyUp?tower.x+7:cat.x, goalY=kittyUp?tower.y:cat.y;
+    moveDogToward(goalX,goalY,15.5,dt);
+    if(Math.random()<dt*.6) fxAt(dog.x,dog.y-7,"🐾",1,{size:11});
+    if(kittyUp){ dog.phase="bark"; dog.t=4.5; dog.barkT=.2; }
+  }else if(dog.phase==="bark"){
+    moveDogToward(tower.x+7,tower.y,9,dt);
+    dog.t-=dt; dog.barkT-=dt;
+    if(dog.barkT<=0){ dog.barkT=rand(1.1,1.8); Snd.bark(); fxAt(dog.x,dog.y-16,"❗",1,{size:14}); }
+    if(dog.t<=0){ dog.phase="exit"; $("#doggy-door").classList.add("open"); }
+  }else if(dog.phase==="exit"){
+    const door=dogDoorPoint();
+    if(moveDogToward(door.x+5,clamp(door.y+8,FLOOR_TOP+5,FLOOR_BOT-4),22,dt)<2){ finishDogEvent(false); }
+  }
+}
+function renderDog(){
+  if(!dog.active) return;
+  const el=$("#dog"),s=depthScale(dog.y);
+  el.style.left=dog.x+"%"; el.style.top=dog.y+"%";
+  el.style.transform=`translate(-50%,-100%) scale(${s})`;
+  el.style.zIndex=Math.round(dog.y*10)-2;
+  el.querySelector(".dog-flip").style.transform=`scaleX(${dog.dir})`;
+}
+
+/* ---------- cozy clock and time of day ---------- */
+const SKY_STOPS=[
+  {h:0,top:"#17264f",bot:"#56527c",dark:.42},{h:5,top:"#293968",bot:"#76647f",dark:.32},
+  {h:6.5,top:"#766fa4",bot:"#ffb17e",dark:.13},{h:8,top:"#8fd0f3",bot:"#eaf8ff",dark:0},
+  {h:16.5,top:"#78c8ee",bot:"#e8f6ff",dark:0},{h:18.3,top:"#a56e9c",bot:"#ff9b64",dark:.09},
+  {h:19.5,top:"#4c4d80",bot:"#de7c73",dark:.24},{h:21,top:"#1c2b54",bot:"#54527b",dark:.4},
+  {h:24,top:"#17264f",bot:"#56527c",dark:.42}
+];
+function hexRgb(hex){ const n=parseInt(hex.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function mixColor(a,b,t){ const x=hexRgb(a),y=hexRgb(b); return `rgb(${x.map((v,i)=>Math.round(v+(y[i]-v)*t)).join(",")})`; }
+function skyAt(hour){
+  let a=SKY_STOPS[0],b=SKY_STOPS[1];
+  for(let i=0;i<SKY_STOPS.length-1;i++) if(hour>=SKY_STOPS[i].h && hour<=SKY_STOPS[i+1].h){ a=SKY_STOPS[i];b=SKY_STOPS[i+1];break; }
+  const t=(hour-a.h)/Math.max(b.h-a.h,.001);
+  return {top:mixColor(a.top,b.top,t),bot:mixColor(a.bot,b.bot,t),dark:a.dark+(b.dark-a.dark)*t};
+}
+function timePeriod(hour){
+  if(hour<5.5) return ["🌙","Night"];
+  if(hour<8) return ["🌅","Sunrise"];
+  if(hour<17) return ["☀️","Daytime"];
+  if(hour<19.5) return ["🌇","Sunset"];
+  if(hour<21) return ["🌆","Dusk"];
+  return ["🌙","Night"];
+}
+function updateWorldStatus(){
+  const mins=Math.floor(worldMinutes)%1440,hour=mins/60,sky=skyAt(hour),period=timePeriod(hour);
+  room.style.setProperty("--sky-top",sky.top); room.style.setProperty("--sky-bottom",sky.bot);
+  room.style.setProperty("--ambient",`rgba(42,43,88,${sky.dark.toFixed(3)})`);
+  const daylight=clamp((hour-5.7)/13.3,0,1), sunUp=hour>=5.7&&hour<=19;
+  const sun=$("#window .sun"),moon=$("#window .moon"),stars=$("#window .stars");
+  sun.style.left=(4+daylight*78)+"%"; sun.style.top=(58-Math.sin(daylight*Math.PI)*52)+"%"; sun.style.opacity=sunUp?"1":"0";
+  const moonT=hour>=18?(hour-18)/12:(hour+6)/12;
+  moon.style.left=(4+clamp(moonT,0,1)*78)+"%"; moon.style.top=(58-Math.sin(clamp(moonT,0,1)*Math.PI)*49)+"%";
+  moon.style.opacity=(hour>=18.5||hour<6)?"1":"0";
+  const starOpacity=hour<5?1:hour<7?(7-hour)/2:hour>19?clamp((hour-19)/2,0,1):0;
+  stars.style.opacity=starOpacity.toFixed(2);
+  const hours12=Math.floor(hour)%12||12,mm=mins%60,ampm=hour<12?"AM":"PM";
+  $("#time-readout").textContent=`${period[0]} ${hours12}:${String(mm).padStart(2,"0")} ${ampm} · ${period[1]}`;
+  $("#fish-readout").textContent=`🐟 ${cat.catches} caught`;
+  $("#wall-clock").setAttribute("aria-label",`Kitty Home clock: ${hours12}:${String(mm).padStart(2,"0")} ${ampm}`);
+  $(".clock-hand.hour").style.transform=`rotate(${(mins/2)%360}deg)`;
+  $(".clock-hand.minute").style.transform=`rotate(${(mins%60)*6}deg)`;
+}
+function tickWorldTime(dt){ worldMinutes=(worldMinutes+dt*TIME_RATE)%1440; }
+
+/* ---------- HUD ---------- */
+const METERS = [["food","🍗"],["water","💧"],["energy","⚡"],["fun","😺"]];
+function buildHud(){
+  hudEl.innerHTML = METERS.map(([k,ico])=>
+    `<div class="meter" data-k="${k}" role="progressbar" aria-label="Kitty ${k}" aria-valuemin="0" aria-valuemax="100"><span class="ico" aria-hidden="true">${ico}</span><span class="bar"><i></i></span></div>`).join("");
+}
+function renderHud(){
+  for(const [k] of METERS){
+    const el = hudEl.querySelector(`[data-k="${k}"]`), v = cat.needs[k];
+    el.querySelector("i").style.width = v+"%";
+    el.setAttribute("aria-valuenow",Math.round(v));
+    el.classList.toggle("low", v<25);
+    el.classList.toggle("mid", v>=25 && v<50);
+  }
+}
+
+/* ---------- shelf ---------- */
+function buildShelf(){
+  shelfEl.innerHTML = SHELF_ORDER.map(t=>
+    `<button type="button" class="card" data-type="${t}" aria-label="Add ${TYPES[t].lbl}"><span class="icon">${ART[TYPES[t].art](Math.min(TYPES[t].w,72))}</span><span class="lbl">${TYPES[t].lbl}</span></button>`).join("");
+}
+
+/* ---------- dragging ---------- */
+const drag = {mode:null, type:null, item:null, moved:false, started:false, sx:0, sy:0,
+  ox:0, oy:0, pointerId:null};
+const wandDrag = {active:false, hot:false, x:0, y:0, lastMove:0};
+
+function startGhost(type, cx, cy){
+  ghostEl.innerHTML = ART[TYPES[type].art](TYPES[type].w);
+  ghostEl.style.display = "block";
+  moveGhost(cx, cy);
+}
+function moveGhost(cx, cy){ ghostEl.style.left = cx+"px"; ghostEl.style.top = cy+"px"; }
+function endGhost(){ ghostEl.style.display = "none"; ghostEl.classList.remove("tilt"); ghostEl.innerHTML = ""; }
+
+function bowlUnder(clientX, clientY, kind){
+  const p = pctOf(clientX, clientY);
+  return items.find(i => TYPES[i.type].bowl===kind &&
+    Math.abs(i.x-p.x)<7 && Math.abs(i.y-p.y)<10) || null;
+}
+function itemMargin(type,y){
+  const t=TYPES[type],r=roomRect(),half=t.w*depthScale(y)/Math.max(r.width,1)*50;
+  return clamp(half,2,20);
+}
+function towerUnder(clientX,clientY){
+  return findItems(i=>i.type==="tower").find(i=>{
+    const r=i.el.getBoundingClientRect();
+    return clientX>=r.left-10&&clientX<=r.right+10&&clientY>=r.top-12&&clientY<=r.bottom+8;
+  }) || null;
+}
+function clearDrag(){
+  drag.mode=null; drag.type=null; drag.item=null; drag.pointerId=null; drag.started=false;
+  drag.moved=false; shelfWrap.classList.remove("trash-hot");
+}
+
+document.addEventListener("pointerdown", e=>{
+  if(e.button!=null && e.button!==0) return;
+  Snd.init();
+  const card = e.target.closest(".card");
+  const itemEl = e.target.closest(".item");
+  const catHit = e.target.closest("#cat");
+  if(card){
+    drag.mode = TYPES[card.dataset.type].tool ? "tool" : "new";
+    drag.type = card.dataset.type; drag.moved = false; drag.started=true;
+    startGhost(drag.type, e.clientX, e.clientY);
+    e.preventDefault();
+  } else if(itemEl){
+    const it = items.find(i=>i.id==itemEl.dataset.id);
+    if(!it) return;
+    if(dog.active && dog.targetTower===it) return;
+    if(cat.target===it || cat.perch===it) cancelCatAction();
+    drag.mode = "move"; drag.item = it; drag.moved = false; drag.started=true;
+    it.el.classList.add("dragging");
+    if(it.type==="wand"){ wandDrag.active = true; wandDrag.x = it.x; wandDrag.y = it.y; }
+    e.preventDefault();
+  } else if(catHit){
+    if(dog.active || cat.safeFromDog){ showBubble("🐶!",1); return; }
+    const p=pctOf(e.clientX,e.clientY);
+    drag.mode="cat"; drag.moved=false; drag.started=false;
+    drag.ox=cat.x-p.x; drag.oy=cat.y-p.y;
+    e.preventDefault();
+  }else return;
+  drag.pointerId=e.pointerId; drag.sx=e.clientX; drag.sy=e.clientY;
+  try{$("#game").setPointerCapture(e.pointerId);}catch(err){}
+});
+document.addEventListener("pointermove", e=>{
+  if(!drag.mode || (drag.pointerId!=null && e.pointerId!==drag.pointerId)) return;
+  if(!drag.moved && Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>5) drag.moved=true;
+  if(drag.mode==="cat" && drag.moved && !drag.started){
+    drag.started=true; cancelCatAction(); setState("dragged"); catEl.classList.add("dragging");
+  }
+  if(drag.mode==="new" || drag.mode==="tool"){
+    moveGhost(e.clientX, e.clientY);
+    if(drag.mode==="tool"){
+      const kind = TYPES[drag.type].tool;
+      const bowl = bowlUnder(e.clientX, e.clientY, kind);
+      pouring.bowl = bowl; pouring.kind = kind;
+      ghostEl.classList.toggle("tilt", !!bowl);
+    }
+  } else if(drag.mode==="move"){
+    const p = pctOf(e.clientX, e.clientY);
+    const it = drag.item;
+    it.y = clamp(p.y + 4, FLOOR_TOP+3, FLOOR_BOT);
+    const margin=itemMargin(it.type,it.y);
+    it.x = clamp(p.x, margin, 100-margin);
+    renderItem(it);
+    if(it.type==="wand"){
+      wandDrag.x = it.x; wandDrag.y = it.y; wandDrag.lastMove = performance.now(); wandDrag.hot = true;
+    }
+    const overShelf = e.clientY > roomRect().bottom - 4;
+    shelfWrap.classList.toggle("trash-hot", overShelf);
+  } else if(drag.mode==="cat" && drag.started){
+    const p=pctOf(e.clientX,e.clientY);
+    cat.x=clamp(p.x+drag.ox,3,97);
+    cat.y=clamp(p.y+drag.oy,FLOOR_TOP+2,FLOOR_BOT-1);
+    if(Math.abs(e.clientX-drag.sx)>3) cat.dir=e.clientX>drag.sx?1:-1;
+  }
+});
+document.addEventListener("pointerup", e=>{
+  if(!drag.mode || (drag.pointerId!=null && e.pointerId!==drag.pointerId)) return;
+  if(drag.mode==="new"){
+    const p = pctOf(e.clientX, e.clientY);
+    if(drag.moved && p.y > FLOOR_TOP-6 && p.y < 102 && p.x>-2 && p.x<102){
+      const y=clamp(Math.max(p.y,FLOOR_TOP+4),FLOOR_TOP+4,FLOOR_BOT),margin=itemMargin(drag.type,y);
+      const it = addItem(drag.type, clamp(p.x,margin,100-margin), y);
+      fxAt(it.x, it.y-4, "✨", 3); Snd.sparkle();
+      inviteToyPlay(it);
+    } else if(!drag.moved){
+      // simple tap on a shelf card: pop the item into the room
+      const it = addItem(drag.type, rand(25,75), rand(FLOOR_TOP+8, FLOOR_BOT-6));
+      fxAt(it.x, it.y-4, "✨", 3); Snd.sparkle();
+      inviteToyPlay(it);
+    }
+    endGhost();
+  } else if(drag.mode==="tool"){
+    endGhost(); pouring.bowl = null;
+  } else if(drag.mode==="move"){
+    const it = drag.item;
+    it.el.classList.remove("dragging");
+    if(e.clientY > roomRect().bottom - 4){
+      fxAt(it.x, it.y-4, "✨", 2); removeItem(it); Snd.sparkle();
+    } else if(!drag.moved && it.type==="pool"){
+      goFish(it);
+    } else if(!drag.moved && it.type==="tower"){
+      approachTower(it,9,false);
+    } else { saveDirty = true; inviteToyPlay(it); }
+    if(it.type==="wand"){ wandDrag.active = false; wandDrag.hot = false; }
+    shelfWrap.classList.remove("trash-hot");
+  } else if(drag.mode==="cat"){
+    catEl.classList.remove("dragging");
+    if(!drag.moved) petCat();
+    else {
+      const tower=towerUnder(e.clientX,e.clientY);
+      if(tower){ cat.x=tower.x; cat.y=tower.y; startClimb(tower,9,false); }
+      else { cat.perch=null; cat.climbProgress=0; setState("sit",.8); fxAt(cat.x,cat.y-8,"🐾",1); }
+      saveDirty=true;
+    }
+  }
+  try{$("#game").releasePointerCapture(e.pointerId);}catch(err){}
+  clearDrag();
+});
+document.addEventListener("pointercancel", e=>{
+  if(drag.pointerId!=null && e.pointerId!==drag.pointerId) return;
+  if(drag.mode==="move" && drag.item){ drag.item.el.classList.remove("dragging");
+    if(drag.item.type==="wand"){ wandDrag.active=false; wandDrag.hot=false; } }
+  if(drag.mode==="cat" && drag.started){ catEl.classList.remove("dragging"); setState("sit",.6); }
+  endGhost(); pouring.bowl=null; clearDrag();
+});
+
+/* pouring loop state */
+const pouring = {bowl:null, kind:null};
+function pourTick(dt){
+  if(drag.mode!=="tool" || !pouring.bowl) return;
+  const b = pouring.bowl;
+  b.level = clamp(b.level + 0.45*dt, 0, 1); updateBowl(b); saveDirty = true;
+  if(Math.random()<dt*14){
+    Snd.pour();
+    fxAt(b.x, b.y-10, "", 1, pouring.kind==="food"
+      ? {dot:"#8f5722", cls:"drop", dy:26, dur:0.4}
+      : {dot:"#7ec3e8", cls:"drop", dy:26, dur:0.35});
+  }
+  // kitty notices!
+  if(b.level>0.2 && Math.random()<dt*0.5) showBubble("😋",1.5);
+}
+setInterval(()=>{ if(wandDrag.hot && performance.now()-wandDrag.lastMove>1400) wandDrag.hot=false; }, 300);
+
+/* ---------- petting ---------- */
+let petCooldown = 0;
+function petCat(){
+  if(petCooldown>0) return;
+  petCooldown = 0.35;
+  Snd.purr();
+  fxAt(cat.x+rand(-4,4), cat.y-16, Math.random()<0.7?"💗":"❤️", 2);
+  cat.needs.fun = clamp(cat.needs.fun+2.5,0,100);
+  if(Math.random()<0.15) Snd.meow();
+  if(cat.state==="sleep"){ setState("sit",2); showBubble("😽",1.5); }
+}
+
+/* ---------- blink ---------- */
+setInterval(()=>{
+  if(cat.state==="sleep") return;
+  catEl.classList.add("eyes-closed");
+  setTimeout(()=>{ if(cat.state!=="sleep") catEl.classList.remove("eyes-closed"); }, 140);
+}, 3400);
+
+/* ---------- save / load ---------- */
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      version:SAVE_VERSION,
+      items: items.map(i=>({type:i.type, x:i.x, y:i.y, level:i.level, uses:i.uses,
+        poopCount:i.poops.length, fishReady:i.fishReady, fishCooldown:i.fishCooldown})),
+      needs:cat.needs, cat:{x:cat.x,y:cat.y,catches:cat.catches},
+      worldMinutes, muted:Snd.muted, seen:true,
+    }));
+  }catch(e){}
+  saveDirty = false;
+}
+function load(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(SAVE_KEY)); }catch(e){}
+  if(d && d.items){
+    for(const s of d.items){
+      if(!TYPES[s.type]) continue;
+      addItem(s.type, clamp(Number(s.x)||50,2,98), clamp(Number(s.y)||75,FLOOR_TOP+2,FLOOR_BOT),
+        {level:s.level, uses:s.uses, poopCount:s.poopCount, fishReady:s.fishReady, fishCooldown:s.fishCooldown});
+    }
+    Object.assign(cat.needs, d.needs||{});
+    if(d.cat){ cat.x=clamp(Number(d.cat.x)||50,3,97); cat.y=clamp(Number(d.cat.y)||75,FLOOR_TOP+2,FLOOR_BOT-1); cat.catches=Number(d.cat.catches)||0; }
+    if(Number.isFinite(d.worldMinutes)) worldMinutes=((d.worldMinutes%1440)+1440)%1440;
+    Snd.muted = !!d.muted;
+    $("#btn-sound").textContent = Snd.muted ? "🔇" : "🔊";
+    if((d.version||1)<SAVE_VERSION) upgradeRoom();
+    saveDirty=false;
+    return true;
+  }
+  return false;
+}
+function ensureItem(type,x,y,count=1){
+  let have=findItems(i=>i.type===type).length;
+  while(have<count){ addItem(type,Array.isArray(x)?x[have%x.length]:x,Array.isArray(y)?y[have%y.length]:y); have++; }
+}
+function upgradeRoom(){
+  ensureItem("tower",78,84); ensureItem("pool",49,75);
+  ensureItem("bookshelf",[10,90],[74,73],2);
+  if(!findItems(i=>i.type==="plant"||i.type==="fern").length){ addItem("plant",21,70); addItem("fern",66,69); }
+  ensureItem("tallBush",30,84);
+  if(findItems(i=>TYPES[i.type].toy).length<3){ ensureItem("ball",40,93); ensureItem("mouse",52,92); ensureItem("kicker",33,89); }
+  saveDirty=true;
+}
+function starterRoom(){
+  addItem("bookshelf",10,74); addItem("bookshelf",90,73);
+  addItem("plant",21,70); addItem("fern",66,69); addItem("tallBush",30,84);
+  addItem("tower",78,84); addItem("pool",49,75);
+  addItem("rug",50,91); addItem("bed",14,91); addItem("litter",89,94);
+  addItem("foodBowl",63,94,{level:.7}); addItem("waterBowl",72,93,{level:.75});
+  addItem("ball",40,94); addItem("mouse",52,92); addItem("kicker",33,89);
+}
+
+/* ---------- buttons ---------- */
+function syncSoundButton(){
+  const b=$("#btn-sound"); b.textContent=Snd.muted?"🔇":"🔊";
+  b.setAttribute("aria-label",Snd.muted?"Turn sound on":"Mute sound"); b.setAttribute("aria-pressed",String(Snd.muted));
+}
+$("#btn-sound").addEventListener("click", ()=>{
+  Snd.muted = !Snd.muted;
+  syncSoundButton();
+  if(!Snd.muted){ Snd.init(); Snd.meow(); }
+  saveDirty = true;
+});
+$("#btn-help").addEventListener("click", ()=>{ $("#intro").classList.remove("hide"); $("#btn-go").focus(); });
+$("#btn-go").addEventListener("click", ()=>{ $("#intro").classList.add("hide"); Snd.init(); Snd.meow(); });
+$("#btn-reset").addEventListener("click", ()=>{
+  if(!confirm("Start over with a fresh room?")) return;
+  if(dog.active) finishDogEvent(true);
+  cancelCatAction();
+  for(const it of [...items]) removeItem(it);
+  Object.assign(cat.needs, {food:75, water:75, energy:85, fun:70});
+  cat.litterTimer = rand(50,80); cat.perch=null; cat.catches=0; cat.x=50; cat.y=75; setState("idle",1);
+  starterRoom(); save();
+});
+$("#doggy-door").addEventListener("click", ()=>{ Snd.init(); startDogEvent(); });
+const scrollBehavior=()=>matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth";
+$("#scrL").addEventListener("click", ()=>shelfEl.scrollBy({left:-220, behavior:scrollBehavior()}));
+$("#scrR").addEventListener("click", ()=>shelfEl.scrollBy({left:220, behavior:scrollBehavior()}));
+$("#cat").addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); petCat(); } });
+shelfEl.addEventListener("click",e=>{
+  const card=e.target.closest(".card"); if(!card || e.detail!==0) return;
+  const type=card.dataset.type;
+  if(TYPES[type].tool) return;
+  const it=addItem(type,rand(28,72),rand(FLOOR_TOP+8,FLOOR_BOT-6));
+  fxAt(it.x,it.y-4,"✨",3); Snd.sparkle(); inviteToyPlay(it);
+});
+itemsEl.addEventListener("keydown",e=>{
+  if(e.key!=="Enter"&&e.key!==" ") return;
+  const el=e.target.closest(".item"); if(!el) return; e.preventDefault();
+  const it=items.find(i=>i.id==el.dataset.id); if(!it) return;
+  if(it.type==="pool") goFish(it); else if(it.type==="tower") approachTower(it,9,false); else inviteToyPlay(it);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&!$("#intro").classList.contains("hide")){ $("#intro").classList.add("hide"); $("#btn-help").focus(); }
+});
+
+/* ---------- main loop ---------- */
+let last = performance.now(), saveTimer = 0, timeRenderTimer=0;
+function frame(now){
+  const dt = Math.min((now-last)/1000, 0.1); last = now;
+  const playing=$("#intro").classList.contains("hide") && !document.hidden;
+  if(playing){
+    petCooldown = Math.max(0, petCooldown-dt);
+    tickWorldTime(dt); tickDog(dt); tick(dt); pourTick(dt);
+  }
+  renderCat();
+  renderDog();
+  renderHud();
+  timeRenderTimer+=dt; if(timeRenderTimer>.5){timeRenderTimer=0;updateWorldStatus();}
+  saveTimer += dt; if(saveTimer>3){ saveTimer=0; save(); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- boot ---------- */
+buildCat(); buildDog(); buildHud(); buildShelf(); syncSoundButton();
+endGhost();
+if(!load()){ starterRoom(); $("#intro").classList.remove("hide"); setTimeout(()=>$("#btn-go").focus(),0); }
+setState("idle", 1);
+updateWorldStatus();
+window.addEventListener("beforeunload", save);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
